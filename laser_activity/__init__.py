@@ -3,6 +3,7 @@
 
 import azure.functions as func
 from laser_activity.azure_activity import writeToExcel
+from datetime import datetime, timedelta
 
 '''
 def main(mytimer: func.TimerRequest) -> None:
@@ -16,4 +17,5 @@ def main(mytimer: func.TimerRequest) -> None:
 '''
 
 def main(write: func.TimerRequest) -> None:
-    writeToExcel()
+    yesterday = datetime.now() - timedelta(1)
+    writeToExcel(yesterday, yesterday)

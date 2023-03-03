@@ -5,7 +5,8 @@ from azure.mgmt.storage import StorageManagementClient
 from azure.mgmt.monitor import MonitorManagementClient
 from azure.mgmt.costmanagement import CostManagementClient
 import pandas as pd
-from datetime import datetime #, date, timedelta, timezone
+from datetime import datetime, timedelta #, date, timezone
+import os
 
 starttime = datetime.now()
 print("Started: " + str(starttime))
@@ -88,9 +89,7 @@ def storage():
             s_df = pd.concat([s_df, df], ignore_index=True)
     return s_df
 
-def costs():
-    datefrom = pd.to_datetime("20220601")
-    dateto = pd.to_datetime("20220628")
+def costs(datefrom, dateto):
     group_list = resource_client.resource_groups.list()
     c_df = pd.DataFrame({})
     for group in group_list:
@@ -114,14 +113,45 @@ def costs():
     c_df.columns = ['PreTaxCost', 'UsageDate', 'ResourceId', 'TagKey', 'TagValue', 'Currency']
     return c_df
 
-def writeToExcel():
-    with pd.ExcelWriter('Resources & Costs v4.xlsx') as excel:
+def writeToExcel(datefrom, dateto):
+    with pd.ExcelWriter('Resources & Costs v5.xlsx') as excel:
         resourceGroups().to_excel(excel, sheet_name='resourceGroups', index=False)
         resources().to_excel(excel, sheet_name='resources', index=False)
         virtualMachines().to_excel(excel, sheet_name='virtualMachines', index=False)
         storage().to_excel(excel, sheet_name='storage', index=False)
-        costs().to_excel(excel, sheet_name='costs', index=False)
+        costs(datefrom, dateto).to_excel(excel, sheet_name='costs', index=False)
 
+def writeToCsv_Yesterday():
+    yesterday = datetime.now() - timedelta(1)
+    year = yesterday.year
+    month = str('00' + str(yesterday.month))[-2:]
+    day = str('00' + str(yesterday.day))[-2:]
+    
+    directory = f"activity/{year}/{month}"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    resourceGroups().to_csv(f"{directory}/{year}-{month}-{day} resourceGroups.csv", index=False)
+    resources().to_csv(f"{directory}/{year}-{month}-{day} resources.csv", index=False)
+    virtualMachines().to_csv(f"{directory}/{year}-{month}-{day} virtualMachines.csv", index=False)
+    storage().to_csv(f"{directory}/{year}-{month}-{day} storage.csv", index=False)
+    costs(yesterday, yesterday).to_csv(f"{directory}/{year}-{month}-{day} costs.csv", index=False)
+
+def writeToCsv_MonthToDate():
+    today = datetime.now()
+    year = today.year
+    month = str('00' + str(today.month))[-2:]
+    monthstart = pd.to_datetime(f"{year}-{month}-01")
+
+    directory = f"activity/{year}/{month}"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    resourceGroups().to_csv(f"{directory}/{year}-{month} resourceGroups.csv", index=False)
+    resources().to_csv(f"{directory}/{year}-{month} resources.csv", index=False)
+    virtualMachines().to_csv(f"{directory}/{year}-{month} virtualMachines.csv", index=False)
+    storage().to_csv(f"{directory}/{year}-{month} storage.csv", index=False)
+    costs(monthstart, today).to_csv(f"{directory}/{year}-{month} costs.csv", index=False)
 
 
 #costs().to_csv('output.csv', index=False)
