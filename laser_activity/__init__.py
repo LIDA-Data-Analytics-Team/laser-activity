@@ -2,8 +2,8 @@
 #import logging
 
 import azure.functions as func
-from laser_activity.azure_activity import writeToExcel
-from datetime import datetime, timedelta
+from laser_activity.Scratch import writeToSql_test
+
 
 '''
 def main(mytimer: func.TimerRequest) -> None:
@@ -17,5 +17,6 @@ def main(mytimer: func.TimerRequest) -> None:
 '''
 
 def main(write: func.TimerRequest) -> None:
-    yesterday = datetime.now() - timedelta(1)
-    writeToExcel(yesterday, yesterday)
+    server = 'lida-dat-cms-test.database.windows.net'
+    database = 'lida_dat_cms_test'
+    writeToSql_test(server=server, database=database)

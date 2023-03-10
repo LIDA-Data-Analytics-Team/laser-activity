@@ -4,10 +4,5 @@
 
 azure-functions
 azure-identity
-azure-mgmt-resource
-azure-mgmt-compute
-azure-mgmt-storage
-azure-mgmt-monitor
-azure-mgmt-costmanagement
+pyodbc
 pandas
-openpyxl
