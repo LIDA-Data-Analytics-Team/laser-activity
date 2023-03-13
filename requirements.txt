@@ -4,5 +4,6 @@
 
 azure-functions
 azure-identity
+azure-mgmt-costmanagement
 pyodbc
 pandas

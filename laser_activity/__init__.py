@@ -2,7 +2,14 @@
 #import logging
 
 import azure.functions as func
-from laser_activity.Scratch import writeToSql_test
+from datetime import datetime, timedelta
+from .LASER_costs import writeToSql_Costs_SingleDay
+
+def main(write: func.TimerRequest) -> None:
+    yesterday = (datetime.now() - timedelta(1)).strftime('%Y-%m-%d')
+    server = 'lida-dat-cms-test.database.windows.net'
+    database = 'lida_dat_cms_test'
+    writeToSql_Costs_SingleDay(single_day=yesterday, server=server, database=database)
 
 
 '''
@@ -15,8 +22,3 @@ def main(mytimer: func.TimerRequest) -> None:
 
     logging.info('Python timer trigger function ran at %s', utc_timestamp)
 '''
-
-def main(write: func.TimerRequest) -> None:
-    server = 'lida-dat-cms-test.database.windows.net'
-    database = 'lida_dat_cms_test'
-    writeToSql_test(server=server, database=database)
