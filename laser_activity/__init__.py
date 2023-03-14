@@ -3,13 +3,13 @@
 
 import azure.functions as func
 from datetime import datetime, timedelta
-from .LASER_costs import writeToSql_Costs_SingleDay
+from .LASER_costs import get35daysOfCosts
 
 def main(write: func.TimerRequest) -> None:
-    yesterday = (datetime.now() - timedelta(1)).strftime('%Y-%m-%d')
+    today = datetime.now().strftime('%Y-%m-%d')
     server = 'lida-dat-cms-test.database.windows.net'
     database = 'lida_dat_cms_test'
-    writeToSql_Costs_SingleDay(single_day=yesterday, server=server, database=database)
+    get35daysOfCosts(today=today, server=server, database=database)
 
 
 '''

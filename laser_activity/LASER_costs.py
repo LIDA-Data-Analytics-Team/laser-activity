@@ -3,6 +3,7 @@ from azure.mgmt.costmanagement import CostManagementClient
 import pandas as pd
 from datetime import timedelta
 from .SQL_stuff import getSqlConnection
+from time import sleep
 
 credential = DefaultAzureCredential()
 
@@ -10,6 +11,8 @@ credential = DefaultAzureCredential()
 subscription_id = "7bf8fea8-fa06-4796-a265-a90a3de4dc10"
 
 def costs(fromdate, todate):
+    fromdate = pd.to_datetime(fromdate)
+    todate = pd.to_datetime(todate)
     costmanagement_client = CostManagementClient(credential)
     c_df = pd.DataFrame({})
     resource_cost = costmanagement_client.query.usage(
@@ -42,33 +45,95 @@ def costs(fromdate, todate):
                         , 'TagKey', 'TagValue', 'Currency']
     return c_df
 
-def writeToSql_Costs_SingleDay(single_day, server, database):
-    single_day = pd.to_datetime(single_day)
-    # Get the days costs from Azure API and put into DataFrame
-    df = costs(single_day, single_day)
-    df = df.fillna('Python NaN').replace(['Python NaN'], [None])
-    # Insert dataframe into table
+def querySql_Costs_SingleDay(single_day, server, database):
+    single_day = pd.to_datetime(single_day).strftime("%Y%m%d")
     conn = getSqlConnection(server, database)
-    cursor = conn.cursor()
-    for row in df.itertuples():
-        cursor.execute(
-            "insert into dbo.tblUsageCosts ([PreTaxCost],[UsageDate],[ResourceGroup],[ResourceId]"
-            + ",[ResourceType],[ServiceName],[ServiceTier],[Meter],[MeterSubCategory],[MeterCategory]"
-            + ",[TagKey],[TagValue],[Currency]) "
-            + "values (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            row.PreTaxCost
-            ,row.UsageDate
-            ,row.ResourceGroup
-            ,row.ResourceId
-            ,row.ResourceType
-            ,row.ServiceName
-            ,row.ServiceTier
-            ,row.Meter
-            ,row.MeterSubCategory
-            ,row.MeterCategory
-            ,row.TagKey
-            ,row.TagValue
-            ,row.Currency
-            )
-    conn.commit()
-    cursor.close()
+    query = f"select * from dbo.tblUsageCosts where UsageDate = {single_day}"
+    df = pd.read_sql(query, conn)
+    return df
+
+def insertSql_Costs_DataFrame(data_frame, server, database):
+    df = data_frame.fillna('Python NaN').replace(['Python NaN'], [None])
+    # Insert new costs from dataframe into table dbo.tblUsageCosts
+    conn = getSqlConnection(server, database)
+    with conn.cursor() as cursor:
+        for row in df.itertuples():
+            cursor.execute(
+            "insert into [dbo].[tblUsageCosts] ([PreTaxCost],[UsageDate],[ResourceGroup],[ResourceId]"
+                + ",[ResourceType],[ServiceName],[ServiceTier],[Meter],[MeterSubCategory],[MeterCategory]"
+                + ",[TagKey],[TagValue],[Currency]) "
+                + "values (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                row.PreTaxCost_x
+                ,int(row.UsageDate)
+                ,row.ResourceGroup
+                ,row.ResourceId
+                ,row.ResourceType_x
+                ,row.ServiceName_x
+                ,row.ServiceTier_x
+                ,row.Meter
+                ,row.MeterSubCategory
+                ,row.MeterCategory
+                ,row.TagKey
+                ,row.TagValue
+                ,row.Currency_x
+                )
+        conn.commit()
+
+def updateSql_Costs_DataFrame(data_frame, server, database):
+    df = data_frame.fillna('Python NaN').replace(['Python NaN'], [None])
+    conn = getSqlConnection(server, database)
+    with conn.cursor() as cursor:
+        # Clear out the staging table
+        cursor.execute("truncate table [stg].[tblUsageCostsUpdate]")
+        # Insert changing records into staging table
+        for row in df.itertuples():
+            cursor.execute(
+                "insert into [stg].[tblUsageCostsUpdate] ([UsageCostsId], [PreTaxCost]) values (?,?)"
+                    , int(row.UsageCostsId)
+                    , row.PreTaxCost_x)
+        # Update costs table
+        cursor.execute("update [dbo].[tblUsageCosts] set [PreTaxCost] = t.[PreTaxCost] from [stg].[tblUsageCostsUpdate] t where [dbo].[tblUsageCosts].[UsageCostsId] = t.[UsageCostsId]")
+        conn.commit()
+
+def daterange(start_date, end_date):
+    for n in range(int((end_date - start_date).days)):
+        yield start_date + timedelta(n)
+
+def get35daysOfCosts(today, server, database):
+    # start getting costs for 35 days ago, as they change during billing period and for 72 hours after
+    start_date = pd.to_datetime(today) - timedelta(35)
+    end_date = pd.to_datetime(today)
+    
+    for single_date in daterange(start_date, end_date):
+        # Fetch existing records for day in question from SQL Database
+        df_e = querySql_Costs_SingleDay(single_date, server, database)
+        df_e['TagValue'].fillna("No TagValue", inplace=True)
+        df_e = df_e.convert_dtypes()
+        # Fetch records from Cost Management API for day in question
+        df_n = costs(single_date, single_date)
+        df_n['TagValue'].fillna("No TagValue", inplace=True)
+        df_n = df_n.convert_dtypes()
+        
+        # Fields used to identify unique records and join DataFrames
+        merge_list = ['UsageDate','ResourceGroup','ResourceId', 'Meter', 'MeterSubCategory', 'MeterCategory', 'TagKey', 'TagValue']
+
+        # Suffix '_x' is left, '_y' is right
+
+        # Determine records fetched from API that are not already present in database
+        df_insert = df_n.merge(df_e, how='left', on=merge_list, indicator=True)
+        df_insert = df_insert.loc[df_insert['_merge'] == 'left_only']
+        # If more than none insert them to database
+        if df_insert.shape[0] > 0:
+            df_insert = df_insert[['PreTaxCost_x', 'UsageDate', 'ResourceGroup', 'ResourceId' 
+                , 'ResourceType_x', 'ServiceName_x', 'ServiceTier_x', 'Meter', 'MeterSubCategory', 'MeterCategory' 
+                , 'TagKey', 'TagValue', 'Currency_x']]
+            insertSql_Costs_DataFrame(df_insert, server, database)
+        
+        # Determine records fetched from API that are already present in database
+        df_update = df_n.merge(df_e, how='inner', on=merge_list)
+        df_update = df_update.loc[df_update['PreTaxCost_y'] != df_update['PreTaxCost_x']]
+        # If more than none update PreTaxCost of each record
+        if df_update.shape[0] > 0:
+            updateSql_Costs_DataFrame(df_update[['UsageCostsId', 'PreTaxCost_x']], server, database)
+
+        sleep(15) # gotta sleep before next API call to avoid API throttling
