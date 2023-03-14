@@ -1,5 +1,6 @@
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.costmanagement import CostManagementClient
+from azure.core.exceptions import HttpResponseError
 import pandas as pd
 from datetime import timedelta
 from .SQL_stuff import getSqlConnection
@@ -15,29 +16,40 @@ def costs(fromdate, todate):
     todate = pd.to_datetime(todate)
     costmanagement_client = CostManagementClient(credential)
     c_df = pd.DataFrame({})
-    resource_cost = costmanagement_client.query.usage(
-        # uri parameter (https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?tabs=HTTP#uri-parameters)
-        scope = f"subscriptions/{subscription_id}", #/resourceGroups/{resource_group}",
-        # request body (https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?tabs=HTTP#request-body)
-        parameters={
-            "dataset": {
-                "aggregation": {"totalCost": {"function": "Sum", "name": "PreTaxCost"}},
-                "granularity": "Daily",
-                "grouping": [{"name": "ResourceGroupName", "type": "Dimension"}
-                             , {"name": "ResourceId", "type": "Dimension"}
-                             , {"name": "ResourceType", "type": "Dimension"}
-                             , {"name": "ServiceName", "type": "Dimension"}
-                             , {"name": "ServiceTier", "type": "Dimension"}
-                             , {"name": "Meter", "type": "Dimension"}
-                             , {"name": "MeterSubCategory", "type": "Dimension"}
-                             , {"name": "MeterCategory", "type": "Dimension"}
-                             , {"name": "Budget Code", "type": "TagKey"}],
-            },
-            "TimePeriod": {"from": fromdate, "to": todate},
-            "timeframe": "Custom",
-            "type": "ActualCost",
-        },
-    )
+    # Potential for infinite loop mitigated by 10 minute max timeout of Consumption Function App
+    while True:
+        try:
+            resource_cost = costmanagement_client.query.usage(
+                # uri parameter (https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?tabs=HTTP#uri-parameters)
+                scope = f"subscriptions/{subscription_id}", #/resourceGroups/{resource_group}",
+                # request body (https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?tabs=HTTP#request-body)
+                parameters={
+                    "dataset": {
+                        "aggregation": {"totalCost": {"function": "Sum", "name": "PreTaxCost"}},
+                        "granularity": "Daily",
+                        "grouping": [{"name": "ResourceGroupName", "type": "Dimension"}
+                                    , {"name": "ResourceId", "type": "Dimension"}
+                                    , {"name": "ResourceType", "type": "Dimension"}
+                                    , {"name": "ServiceName", "type": "Dimension"}
+                                    , {"name": "ServiceTier", "type": "Dimension"}
+                                    , {"name": "Meter", "type": "Dimension"}
+                                    , {"name": "MeterSubCategory", "type": "Dimension"}
+                                    , {"name": "MeterCategory", "type": "Dimension"}
+                                    , {"name": "Budget Code", "type": "TagKey"}],
+                    },
+                    "TimePeriod": {"from": fromdate, "to": todate},
+                    "timeframe": "Custom",
+                    "type": "ActualCost",
+                },
+            )
+        # HttpResponseError Code: 429, Message: Too many requests. Please retry. 
+        # If received then wait 15 seconds and try again (within the While loop)
+        except HttpResponseError as e:
+            if e.status_code == 429:
+                sleep(15)
+                continue
+        # Break out of the While loop
+        break
     c_df = pd.concat([c_df, pd.DataFrame(resource_cost.rows)], ignore_index=True)
     if not c_df.empty:
         c_df.columns = ['PreTaxCost', 'UsageDate','ResourceGroup', 'ResourceId', 'ResourceType'
@@ -135,5 +147,3 @@ def get35daysOfCosts(today, server, database):
         # If more than none update PreTaxCost of each record
         if df_update.shape[0] > 0:
             updateSql_Costs_DataFrame(df_update[['UsageCostsId', 'PreTaxCost_x']], server, database)
-
-        sleep(15) # gotta sleep before next API call to avoid API throttling
