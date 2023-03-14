@@ -5,6 +5,5 @@
 azure-functions
 azure-identity
 azure-mgmt-costmanagement
-azure-core-exceptions
 pyodbc
 pandas
