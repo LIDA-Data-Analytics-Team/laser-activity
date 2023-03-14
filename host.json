@@ -4,13 +4,13 @@
     "applicationInsights": {
       "samplingSettings": {
         "isEnabled": true,
-        "excludedTypes": "Request",
-        "functionTimeout": "00:10:00"
+        "excludedTypes": "Request"
       }
     }
   },
   "extensionBundle": {
     "id": "Microsoft.Azure.Functions.ExtensionBundle",
     "version": "[3.*, 4.0.0)"
-  }
+  },
+  "functionTimeout": "00:10:00"
 }
