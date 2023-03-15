@@ -29,7 +29,7 @@ Because costs are mutable until three days after the monthly billing period has 
 
 The Azure Logic App uses System Managed Identity to authenticate against the resources it interacts with. 
 
-It has been made a member of the following roles:  
+It requires membership to the following roles:  
 |Scope|Role|
 |---|---|
 |Subscription|Reader|
