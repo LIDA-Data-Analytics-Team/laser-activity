@@ -13,17 +13,14 @@ Important points from the above link:
 - During the open month (uninvoiced) period, cost management data should be considered an estimate only. In some cases, charges may be latent in arriving to the system after the usage actually occurred.
 
 Because costs are mutable until three days after the monthly billing period has closed, the script:
-- pulls data from the Cost Management API for the last 35 days
+- iterates through the last 35 days, pulling data from the Cost Management API one day at a time at subscription scope
 - compares each record with those already present in the database
 	- matches records using [UsageDate], [ResourceGroup], [ResourceId], [Meter], [MeterSubCategory], [MeterCategory], [TagKey], [TagValue] 
 - inserts any not present direct to [dbo].[tblUsageCosts]
 - updates any records already present but with a different [PreTaxCost] 
 	- truncates staging table
 	- inserts to staging table [stg].[UsageCostsUpdate]
-	- using primary key [UsageCostsId] of existing record 
-	- updates [dbo].[tblUsageCosts] from [stg].[UsageCostsUpdate]
-
-
+	- updates records in [dbo].[tblUsageCosts] from [stg].[UsageCostsUpdate] on SQL database using primary key [UsageCostsId] of existing record  
 
 ## Permissions
 
