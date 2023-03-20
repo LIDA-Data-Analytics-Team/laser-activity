@@ -10,9 +10,6 @@ credential = ChainedTokenCredential(AzureCliCredential(), DefaultAzureCredential
 #LASER
 subscription_id = "7bf8fea8-fa06-4796-a265-a90a3de4dc10"
 
-server = 'lida-dat-cms-test.database.windows.net'
-database = 'lida_dat_cms_test'
-
 resource_client = ResourceManagementClient(credential, subscription_id)
 
 def resourceGroups():
@@ -86,7 +83,7 @@ def resources(rg_list):
             break
     return df_r
 
-def querySQL_ResourceGroups():
+def querySQL_ResourceGroups(server, database):
     conn = getSqlConnection(server, database)
     query = "select * from dbo.tblLaserResourceGroups where ValidTo is null"
     df = pd.read_sql(query, conn)
@@ -95,7 +92,7 @@ def querySQL_ResourceGroups():
 def querySQL_Resources():
     print('Run SQL query to fetch current records')
 
-def insertSQL_ResourceGroups(data_frame):
+def insertSQL_ResourceGroups(data_frame, server, database):
     df = data_frame.fillna('Python NaN').replace(['Python NaN'], [None])
     # Insert new costs from dataframe into table dbo.tblUsageCosts
     conn = getSqlConnection(server, database)
@@ -111,11 +108,10 @@ def insertSQL_ResourceGroups(data_frame):
                            , row.ProjectVRE)
         conn.commit()
 
-
 def insertSQL_Resources():
     print('run query to insert new records')
 
-def updateSQL_ValidTo(table, id_list):
+def updateSQL_ValidTo(server, database, table, id_list):
     conn = getSqlConnection(server, database)
     with conn.cursor() as cursor:
         for id in id_list:
@@ -127,9 +123,9 @@ def updateSQL_ValidTo(table, id_list):
 ####################################################################
 ####################################################################
 
-def updateResourceGroups():
+def updateResourceGroups(server, database):
     # get existing records from sql database to dataframe
-    df_e = querySQL_ResourceGroups()
+    df_e = querySQL_ResourceGroups(server, database)
     # azure resourceGroups to dataframe
     df_n = resourceGroups()
     
@@ -140,7 +136,7 @@ def updateResourceGroups():
     df_delete = df_all.loc[df_all['_merge'] == 'left_only']
     # logically delete in sql
     if df_delete.shape[0] > 0:
-        updateSQL_ValidTo(table='dbo.tblLaserResourceGroups', id_list=df_delete['rgid'].to_list())
+        updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserResourceGroups', id_list=df_delete['rgid'].to_list())
     print(f"{df_delete.shape[0]} resource groups date deleted")
     
     # both = present in sql and in azure  
@@ -159,8 +155,8 @@ def updateResourceGroups():
                                         , 'Project Name': 'ProjectName'
                                         , 'Project VRE': 'ProjectVRE'
                                         }, axis='columns')
-            updateSQL_ValidTo(table='dbo.tblLaserResourceGroups', id_list=df_update['rgid'].to_list())
-            insertSQL_ResourceGroups(df_update)
+            updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserResourceGroups', id_list=df_update['rgid'].to_list())
+            insertSQL_ResourceGroups(df_update, server, database)
     print(f"{df_update.shape[0]} resource groups date deleted and updated record inserted")
     
     # right_only = present in azure not in sql = insert new record    
@@ -172,7 +168,7 @@ def updateResourceGroups():
                                     , 'Project Name': 'ProjectName'
                                     , 'Project VRE': 'ProjectVRE'
                                     }, axis='columns')
-        insertSQL_ResourceGroups(df_insert)
+        insertSQL_ResourceGroups(df_insert, server, database)
     print(f"{df_insert.shape[0]} new records created")
 
 def updateResources():

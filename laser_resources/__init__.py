@@ -6,7 +6,9 @@ from .LASER_resources import updateResourceGroups
 import pandas as pd
 
 def main(mytimer: func.TimerRequest) -> None:
-    updateResourceGroups()
+    server = 'lida-dat-cms-test.database.windows.net'
+    database = 'lida_dat_cms_test'
+    updateResourceGroups(server, database)
 
 '''
 def main(mytimer: func.TimerRequest) -> None:
