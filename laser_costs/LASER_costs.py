@@ -139,17 +139,11 @@ def get35daysOfCosts(today, server, database):
             df_insert = df_insert[['PreTaxCost_x', 'UsageDate', 'ResourceGroup', 'ResourceId' 
                 , 'ResourceType_x', 'ServiceName_x', 'ServiceTier_x', 'Meter', 'MeterSubCategory', 'MeterCategory' 
                 , 'TagKey', 'TagValue', 'Currency_x']]
-            #insertSql_Costs_DataFrame(df_insert, server, database)
-            print(df_insert.shape[0])
-        else:
-            print(df_insert.shape[0])
+            insertSql_Costs_DataFrame(df_insert, server, database)
         
         # Determine records fetched from API that are already present in database
         df_update = df_n.merge(df_e, how='inner', on=merge_list)
         df_update = df_update.loc[df_update['PreTaxCost_y'] != df_update['PreTaxCost_x']]
         # If more than none update PreTaxCost of each record
         if df_update.shape[0] > 0:
-            #updateSql_Costs_DataFrame(df_update[['UsageCostsId', 'PreTaxCost_x']], server, database)
-            print(df_update.shape[0])
-        else:
-            print(df_update.shape[0])
+            updateSql_Costs_DataFrame(df_update[['UsageCostsId', 'PreTaxCost_x']], server, database)
