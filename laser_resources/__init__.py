@@ -2,14 +2,11 @@ import datetime
 import logging
 
 import azure.functions as func
-from .LASER_resources import resourceGroups, resources
+from .LASER_resources import updateResourceGroups
 import pandas as pd
 
 def main(mytimer: func.TimerRequest) -> None:
-    df_rg = resourceGroups()
-    print(f"Resource Group count: {df_rg.shape[0]}")
-    df_r = resources(df_rg['ResourceGroup'].to_list())
-    print(f"Resource count: {df_r.shape[0]}")
+    updateResourceGroups()
 
 '''
 def main(mytimer: func.TimerRequest) -> None:
