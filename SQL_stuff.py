@@ -3,13 +3,13 @@ Authenticating using AAD MFA from MacOS / Linux
 https://stackoverflow.com/questions/58440480/connect-to-azure-sql-in-python-with-mfa-active-directory-interactive-authenticat
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-from azure.identity import AzureCliCredential, DefaultAzureCredential, ManagedIdentityCredential
+from azure.identity import AzureCliCredential, ManagedIdentityCredential, DefaultAzureCredential, ChainedTokenCredential
 import struct
 import pyodbc 
 
 def getSqlConnection(server, database):
     # Use the cli credential to get a token after the user has signed in via the Azure CLI 'az login' command.
-    credential = DefaultAzureCredential()
+    credential = ChainedTokenCredential(AzureCliCredential(), DefaultAzureCredential(), ManagedIdentityCredential())
     databaseToken = credential.get_token('https://database.windows.net/.default')
 
     # get bytes from token obtained

@@ -5,7 +5,7 @@ import azure.functions as func
 from datetime import datetime, timedelta
 from .LASER_costs import get35daysOfCosts
 
-def main(write: func.TimerRequest) -> None:
+def main(mytimer: func.TimerRequest) -> None:
     today = datetime.now().strftime('%Y-%m-%d')
     server = 'lida-dat-cms-test.database.windows.net'
     database = 'lida_dat_cms_test'
