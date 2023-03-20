@@ -1,6 +1,7 @@
 from azure.identity import AzureCliCredential, ManagedIdentityCredential, DefaultAzureCredential, ChainedTokenCredential
 from azure.mgmt.resource import ResourceManagementClient
 from azure.core.exceptions import HttpResponseError
+from ..SQL_stuff import getSqlConnection
 import pandas as pd
 from time import sleep
 
@@ -8,6 +9,9 @@ credential = ChainedTokenCredential(AzureCliCredential(), DefaultAzureCredential
 
 #LASER
 subscription_id = "7bf8fea8-fa06-4796-a265-a90a3de4dc10"
+
+server = 'lida-dat-cms-test.database.windows.net'
+database = 'lida_dat_cms_test'
 
 resource_client = ResourceManagementClient(credential, subscription_id)
 
@@ -82,5 +86,95 @@ def resources(rg_list):
             break
     return df_r
 
+def querySQL_ResourceGroups():
+    conn = getSqlConnection(server, database)
+    query = "select * from dbo.tblLaserResourceGroups where ValidTo is null"
+    df = pd.read_sql(query, conn)
+    return df
+
+def querySQL_Resources():
+    print('Run SQL query to fetch current records')
+
+def insertSQL_ResourceGroups(data_frame):
+    df = data_frame.fillna('Python NaN').replace(['Python NaN'], [None])
+    # Insert new costs from dataframe into table dbo.tblUsageCosts
+    conn = getSqlConnection(server, database)
+    with conn.cursor() as cursor:
+        for row in df.itertuples():
+            cursor.execute("insert into dbo.tblLaserResourceGroups (ResourceGroup, BudgetCode "
+                           + ", ProjectID, ProjectName, ProjectVRE) "
+                           + "values (?, ?, ?, ?, ?)"
+                           , row.ResourceGroup
+                           , row.BudgetCode
+                           , row.ProjectID
+                           , row.ProjectName
+                           , row.ProjecyVRE)
+        conn.commit()
+
+
+def insertSQL_Resources():
+    print('run query to insert new records')
+
+def updateSQL_ValidTo(table, id_list):
+    conn = getSqlConnection(server, database)
+    with conn.cursor() as cursor:
+        for id in id_list:
+            cursor.execute(f"update {table} set ValidTo = getdate() where rgid = ?"
+            , id
+            )
+        conn.commit()
+
 ####################################################################
 ####################################################################
+
+def updateResourceGroups():
+    # get current records from sql database to dataframe
+    df_e = querySQL_ResourceGroups()
+    # azure resourceGroups to dataframe
+    df_n = resourceGroups()
+    
+    # outer join dataframes, left_on = sql right_on = azure
+    df_all = df_e.merge(df_n, how='outer', on='ResourceGroup', indicator=True)
+    
+    # left_only = present in sql not in azure 
+    df_delete = df_all.loc[df_all['_merge'] == 'left_only']
+    # logically delete in sql
+    updateSQL_ValidTo(table='dbo.tblLaserResourceGroups', id_list=df_delete['rgid'].to_list())
+    print(f"Deleted total {df_delete.shape[0]} resource groups")
+    
+    # both = present in sql and in azure  
+        # no difference = no action 
+        # difference = logically delete in sql and insert new record 
+    df_update = df_all.loc[df_all['_merge'] == 'both']
+    df_update = df_update.loc[df_update['Budget Code_x'] != df_update['Budget Code_y'] 
+                              | df_update['Project ID_x'] != df_update['Project ID_y']
+                              | df_update['Project Name_x'] != df_update['Project Name_y']
+                              | df_update['Project VRE_x'] != df_update['Project VRE_y']]
+    df_update = df_update[['rgid','ResourceGroup', 'Budget Code_y', 'Project ID_y', 'Project Name_y', 'Project VRE_y' ]]
+    df_update = df_update.rename({'Budget Code_y': 'BudgetCode'
+                                  , 'Project ID_y': 'ProjectID'
+                                  , 'Project Name_y': 'ProjectName'
+                                  , 'Project VRE_y': 'ProjectVRE'
+                                  }, axis='columns')
+    updateSQL_ValidTo(table='dbo.tblLaserResourceGroups', id_list=df_update['rgid'].to_list())
+    insertSQL_ResourceGroups(df_update)
+    print(f"logically deleted and inserted updated records for {df_update.shape[0]} resource groups")
+    
+    # right_only = present in azure not in sql = insert new record    
+    df_insert = df_all.loc[df_all['_merge'] == 'right_only']
+    df_insert = df_insert[['rgid','ResourceGroup', 'Budget Code_y', 'Project ID_y', 'Project Name_y', 'Project VRE_y' ]]
+    df_insert = df_insert.rename({'Budget Code_y': 'BudgetCode'
+                                  , 'Project ID_y': 'ProjectID'
+                                  , 'Project Name_y': 'ProjectName'
+                                  , 'Project VRE_y': 'ProjectVRE'
+                                  }, axis='columns')
+    insertSQL_ResourceGroups(df_insert)
+    print(f"Created {df_insert.shape[0]} new records")
+
+def updateResources():
+    print('method to compare new & old records, update and insert as appropriate')
+
+####################################################################
+####################################################################
+
+updateResourceGroups()
