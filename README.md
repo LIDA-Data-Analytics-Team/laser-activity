@@ -39,7 +39,7 @@ First compares Resource Groups and then Resources returned by Azure SDK (azure.m
 - ResourceGroup as a unique identifier for Resource Groups  
 - ResourceID as a unique identifier for Resources  
 
-By treating Resource Groups and Resources as Type 2 Slowly Changing Dimensions we can maintain a history of a VRE.  
+Unfortunately I can't see that Azure Resource Management maintains a historic record of Resource Groups and Resources, but by treating Resource Groups and Resources as Type 2 Slowly Changing Dimensions in the database we can maintain a history of a VRE.  
 
 ```mermaid
 graph TD
