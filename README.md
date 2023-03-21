@@ -35,7 +35,7 @@ Because costs are mutable until three days after the monthly billing period has 
 
 ### LASER Resources
 
-First compares Resource Groups and then Resources returned by Azure SDK (azure.mgmt.resource) with those already present in the SQL database.  
+First compares Resource Groups and then Resources returned by Azure SDK (azure.mgmt.resource) with those already present in the SQL database, using ResourceID as a unique identifier.  
 By treating Resource Groups and Resources as Type 2 Slowly Changing Dimensions we can maintain a history of a VRE.  
 
 ```mermaid
