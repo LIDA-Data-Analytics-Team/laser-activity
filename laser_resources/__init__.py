@@ -2,13 +2,14 @@ import datetime
 import logging
 
 import azure.functions as func
-from .LASER_resources import updateResourceGroups
+from .LASER_resources import updateResourceGroups, updateResources
 import pandas as pd
 
 def main(mytimer: func.TimerRequest) -> None:
     server = 'lida-dat-cms-test.database.windows.net'
     database = 'lida_dat_cms_test'
     updateResourceGroups(server, database)
+    updateResources(server, database)
 
 '''
 def main(mytimer: func.TimerRequest) -> None:
