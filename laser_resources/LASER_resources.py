@@ -1,7 +1,7 @@
 from azure.identity import AzureCliCredential, ManagedIdentityCredential, DefaultAzureCredential, ChainedTokenCredential
 from azure.mgmt.resource import ResourceManagementClient
 from azure.core.exceptions import HttpResponseError
-from ..SQL_stuff import getSqlConnection
+from ..SQL_stuff import getSqlConnection, updateSQL_ValidTo
 import pandas as pd
 from time import sleep
 
@@ -132,15 +132,6 @@ def insertSQL_Resources(data_frame, server, database):
                            , row.ProjectName
                            , row.ProjectVRE
                            , row.CreatedDate)
-        conn.commit()
-
-def updateSQL_ValidTo(server, database, table, pk, id_list):
-    conn = getSqlConnection(server, database)
-    with conn.cursor() as cursor:
-        for id in id_list:
-            cursor.execute(f"update {table} set ValidTo = getdate() where {pk} = ?"
-            , id
-            )
         conn.commit()
 
 ####################################################################
