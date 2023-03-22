@@ -11,6 +11,7 @@ credential = ChainedTokenCredential(AzureCliCredential(), DefaultAzureCredential
 subscription_id = "7bf8fea8-fa06-4796-a265-a90a3de4dc10"
 
 def vmSizes():
+    # https://learn.microsoft.com/en-us/rest/api/compute/virtual-machines/list-all?tabs=HTTP
     comp_client = ComputeManagementClient(credential, subscription_id)
 
     df_vm = pd.DataFrame({})

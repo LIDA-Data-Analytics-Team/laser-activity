@@ -55,6 +55,11 @@ graph TD
 
 ### LASER VMs 
 
+- Pulls all VMs from across the subscription with their hardware profile size (eg 'Standard_D4s_v4' etc.)
+- Inserts these to the SQL database as Type 2 Slowly Changing Dimension (same logic as Resources & Resource Groups above)
+- Then, for each VM ResourceID, gets yesterday's Start and Stop activity data
+- Checks against records that may be already present in the database for the same event date and event id
+- Inserts to the database all records not already present
 
 ## Permissions
 
