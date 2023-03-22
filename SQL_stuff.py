@@ -26,3 +26,12 @@ def getSqlConnection(server, database):
     conn = pyodbc.connect(connString, attrs_before = {SQL_COPT_SS_ACCESS_TOKEN:tokenstruct});
 
     return conn
+
+def updateSQL_ValidTo(server, database, table, pk, id_list):
+    conn = getSqlConnection(server, database)
+    with conn.cursor() as cursor:
+        for id in id_list:
+            cursor.execute(f"update {table} set ValidTo = getdate() where {pk} = ?"
+            , id
+            )
+        conn.commit()
