@@ -12,9 +12,9 @@ SubscriptionId, SQL Server & Database are all hard coded rather than parameteris
 
 - [LASER Costs](#laser-costs) : costs accrued by each resource in LASER
 - [LASER Resources](#laser-resources) : Resource Groups and Resources, along with useful tags for each
-- LASER Budgets
-- [LASER VMs](#laser-vms) : VM sizes and Start/Stop event times
+- [LASER VMs](#laser-vms) : VM sizes and Start/Stop event times, along with who initiated them
 - LASER Users
+- LASER Budgets
 
 ### LASER Costs
 

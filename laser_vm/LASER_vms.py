@@ -49,7 +49,8 @@ def vmActivity(start_date, end_date, df_vm):
                                 , 'category': [log.category.__getattribute__("localized_value")]
                                 , 'operation_name': [operation_name]
                                 , 'status': [log.status.__getattribute__("value")]
-                                , 'client_request_id': [client_request_id]})
+                                , 'client_request_id': [client_request_id]
+                                , 'caller': log.caller})
             df = df.loc[df['category'] == 'Administrative']
             df_vm_activity = pd.concat([df_vm_activity, df], ignore_index=True)
     return df_vm_activity
@@ -90,8 +91,8 @@ def insertSql_VmActivity_DataFrame(data_frame, server, database):
         for row in df.itertuples():
             cursor.execute("insert into dbo.tblLaserVmActivity ([ResourceGroup],[ResourceId] "
                            + ",[CorrelationId],[EventDataId],[EventTimestamp],[Category],[OperationName] "
-                           + ",[Status],[ClientRequestId]) "
-                           + "values (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                           + ",[Status],[ClientRequestId], [Caller]) "
+                           + "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                            , row.resource_group_name
                            , row.resource_id
                            , row.correlation_id
@@ -100,7 +101,8 @@ def insertSql_VmActivity_DataFrame(data_frame, server, database):
                            , row.category
                            , row.operation_name
                            , row.status
-                           , row.client_request_id)
+                           , row.client_request_id
+                           , row.caller)
         conn.commit()
 
 def daterange(start_date, end_date):
