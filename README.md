@@ -39,8 +39,10 @@ Because costs are mutable until three days after the monthly billing period has 
 ### LASER Resources
 
 First compares Resource Groups and then Resources returned by Azure SDK (azure.mgmt.resource) with those already present in the SQL database.  
-- ResourceGroup as a unique identifier for Resource Groups  
-- ResourceID as a unique identifier for Resources  
+- [ResourceGroup] as a unique identifier for Resource Groups  
+    - inserted to [dbo].[tblLaserResources]
+- [ResourceID] as a unique identifier for Resources  
+    - inserted to [dbo].[tblLaserResourceGroups]
 
 Unfortunately I can't see that Azure Resource Management maintains a historic record of Resource Groups and Resources, but by treating Resource Groups and Resources as Type 2 Slowly Changing Dimensions in the database we can maintain a history of a VRE.  
 
@@ -55,11 +57,17 @@ graph TD
 
 ### LASER VMs 
 
-- Pulls all VMs from across the subscription with their hardware profile size (eg 'Standard_D4s_v4' etc.)
-- Inserts these to the SQL database as Type 2 Slowly Changing Dimension (same logic as Resources & Resource Groups above)
-- Then, for each VM ResourceID, gets yesterday's Start and Stop activity data
+Similar to Resoures, Azure doesn't appear to maintain historic records of Virtual Machines, so we pull their hardware profile size (eg 'Standard_D4s_v4' etc.) each day from Azure and update the database as a Type 2 Slowly Changing Dimension (same logic as Resources & Resource Groups above).  
+- inserted to [db].[tblLaserVmSizes]
+
+Then for each VM ResourceID, gets yesterday's Start and Stop activity data:
 - Checks against records that may be already present in the database for the same event date and event id
-- Inserts to the database all records not already present
+- Writes to the database all records not already present  
+- inserted to [db].[tblLaserVmActivity]  
+
+Microsoft only retain activity data in Azure for 90 days:  
+[Activity log retention period](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log?tabs=powershell#retention-period)
+
 
 ## Permissions
 
