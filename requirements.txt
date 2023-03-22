@@ -6,5 +6,8 @@ azure-functions
 azure-identity
 azure-mgmt-costmanagement
 azure-mgmt-resource
+azure-mgmt-monitor
+azure-mgmt-compute
+azure-core
 pyodbc
 pandas
