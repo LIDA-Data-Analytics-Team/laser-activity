@@ -1,21 +1,21 @@
-#import datetime
-#import logging
+import datetime
+import logging
 
 import azure.functions as func
-from datetime import datetime, timedelta
-from .LASER_costs import get35daysOfCosts
+from datetime import datetime
+from .LASER_vms import updateVmSizes, getYesterdaysVmActivity
 
 def main(mytimer: func.TimerRequest) -> None:
     today = datetime.now().strftime('%Y-%m-%d')
     server = 'lida-dat-cms-test.database.windows.net'
     database = 'lida_dat_cms_test'
-    get35daysOfCosts(today=today, server=server, database=database)
-
+    updateVmSizes(server, database)
+    getYesterdaysVmActivity(today=today, server=server, database=database)
 
 '''
 def main(mytimer: func.TimerRequest) -> None:
-    utc_timestamp = datetime.utcnow().replace(
-        tzinfo=timezone.utc).isoformat()
+    utc_timestamp = datetime.datetime.utcnow().replace(
+        tzinfo=datetime.timezone.utc).isoformat()
 
     if mytimer.past_due:
         logging.info('The timer is past due!')

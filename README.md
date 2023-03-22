@@ -7,10 +7,13 @@ Scheduled to run once every a day at 0700.
 ## What it does
 
 There are several functions within the function app, each responsible for fetching specific activity data and populating a database. 
+
+SubscriptionId, SQL Server & Database are all hard coded rather than parameterised. This was a design choice made because we'll only be using this to collect activity data from LASER into Prism.  
+
 - [LASER Costs](#laser-costs) : costs accrued by each resource in LASER
 - [LASER Resources](#laser-resources) : Resource Groups and Resources, along with useful tags for each
 - LASER Budgets
-- LASER VMs
+- [LASER VMs](#laser-vms) : VM sizes and Start/Stop event times
 - LASER Users
 
 ### LASER Costs
@@ -49,6 +52,9 @@ graph TD
     C --> |Yes| G(Logically delete existing record <br>and insert new record)   
     C -->|No| H(Do nothing)
 ```
+
+### LASER VMs 
+
 
 ## Permissions
 
