@@ -64,7 +64,7 @@ def Groups():
 
 def GroupMembers(df_groups):
     # https://learn.microsoft.com/en-us/graph/api/group-list-members?view=graph-rest-1.0&tabs=http
-    
+
     # DataFrame to contain all members of LASER AAD groups
     df_members = pd.DataFrame({})
     for id in df_groups['id']:
@@ -238,7 +238,7 @@ def updateGroupMembers(server, database):
                                   | (df_update['userPrincipalName'] != df_update['UserPrincipalName'])
                                   ]
         if df_update.shape[0] > 0:
-            df_update = df_update[['group_id','group_displayName', 'user_id', 'user_displayName'
+            df_update = df_update[['gmid', 'group_id','group_displayName', 'user_id', 'user_displayName'
                                    , 'givenName', 'surname', 'mail', 'userPrincipalName']]
             updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserAADGroupMembers'
                               , pk='gmid', id_list=df_update['gmid'].to_list())
