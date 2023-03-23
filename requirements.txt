@@ -9,5 +9,6 @@ azure-mgmt-resource
 azure-mgmt-monitor
 azure-mgmt-compute
 azure-core
+msgraph-core
 pyodbc
 pandas
