@@ -1,6 +1,6 @@
 # LASER Activity
 
-Azure Function App used to run Python scripts that insert LASER usage costs into SQL Database.
+Azure Function App used to run Python scripts that insert details about LASER usage and costs from Azure APIs into a SQL Database.  
 
 Scheduled to run once every a day, each function executing 10 minutes after the last starting at 0700.
 
