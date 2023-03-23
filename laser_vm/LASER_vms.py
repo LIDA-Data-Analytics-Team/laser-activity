@@ -141,7 +141,7 @@ def updateVmSizes(server, database):
             df_update = df_update.rename({'vm_name': 'VmName'
                                         , 'vm_size': 'VmSize'
                                         }, axis='columns')
-            updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserResourceGroups'
+            updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserVmSizes'
                               , pk='vmid', id_list=df_update['vmid'].to_list())
             insertSql_VmSizes_DataFrame(df_update, server, database)
     print(f"{df_update.shape[0]} VM Sizes date deleted and updated record inserted")
