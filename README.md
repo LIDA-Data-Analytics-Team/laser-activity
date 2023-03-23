@@ -2,18 +2,20 @@
 
 Azure Function App used to run Python scripts that insert LASER usage costs into SQL Database.
 
-Scheduled to run once every a day at 0700.
+Scheduled to run once every a day, each function executing 10 minutes after the last starting at 0700.
 
 ## What it does
 
-There are several functions within the function app, each responsible for fetching specific activity data and populating a database. 
+There are several functions within the function app, each responsible for fetching specific activity data and populating a database.  
+
+Each function consists of an \_\__init\_\__ file that kicks off methods contained in a file named after the function in the same folder, as well as a shared helper file _SQL_\__stuff.py_.
 
 SubscriptionId, SQL Server & Database are all hard coded rather than parameterised. This was a design choice made because we'll only be using this to collect activity data from LASER into Prism.  
 
 - [LASER Costs](#laser-costs) : costs accrued by each resource in LASER
 - [LASER Resources](#laser-resources) : Resource Groups and Resources, along with useful tags for each
 - [LASER VMs](#laser-vms) : VM sizes and Start/Stop event times, along with who initiated them
-- LASER Users
+- [LASER Users](#laser-users) : Azure AD groups and their memberships
 - LASER Budgets
 
 ### LASER Costs
@@ -57,25 +59,55 @@ graph TD
 
 ### LASER VMs 
 
-Similar to Resoures, Azure doesn't appear to maintain historic records of Virtual Machines, so we pull their hardware profile size (eg 'Standard_D4s_v4' etc.) each day from Azure and update the database as a Type 2 Slowly Changing Dimension (same logic as Resources & Resource Groups above).  
-- inserted to [db].[tblLaserVmSizes]
+Similar to Resoures, Azure doesn't appear to maintain historic records of Virtual Machines, so we pull their hardware profile size (eg 'Standard_D4s_v4' etc.) each day from Azure and update the database as a Type 2 Slowly Changing Dimension, following the same logic as shown in the [LASER Resources](#laser-resources) diagram.    
+- inserted to [dbo].[tblLaserVmSizes]
 
 Then for each VM ResourceID, gets yesterday's Start and Stop activity data:
 - Checks against records that may be already present in the database for the same event date and event id
 - Writes to the database all records not already present  
-- inserted to [db].[tblLaserVmActivity]  
+- inserted to [dbo].[tblLaserVmActivity]  
 
 Microsoft only retain activity data in Azure for 90 days:  
 [Activity log retention period](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log?tabs=powershell#retention-period)
 
+### LASER Users  
+
+Uses Microsoft Graph to get all Azure AD groups that follow the LASER naming convention (and a couple that don't). The group filter is:  
+ ```
+startswith(displayName,'VRE-p')  
+or startswith(displayName,'VRE-s')  
+or startswith(displayName,'VRE-u')  
+or startswith(displayName,'VRE-t')  
+or startswith(displayName,'PICANet-')  
+or startswith(displayName,'PICANetv2-')  
+or displayName eq 'LRDP-All-Citrix-Users'  
+or displayName eq 'LRDP-All-Citrix-SafeRoom-Users'  
+```
+Then gets all direct members of each Azure AD group returned. Nested groups are ignored.  
+
+The returned result sets are (or can be) paginated. This is handled for both Groups and Group Members by an initial GET request that obtains an '@odata.nextLink' URL if there is one. If present there follows a loop that uses the nextLink URL to obtain the next page of results.  
+
+Both Groups and Group Members result sets are inserted to the SQL Database as a Type 2 Slowly Changing Dimension, following the same logic as shown in the [LASER Resources](#laser-resources) diagram.  
+
+Groups inserted to [dbo].[tblLaserAADGroups]
+Group members inserted to [dbo].[tblLaserAADGroupMembers]    
 
 ## Permissions
 
-The Azure Logic App uses System Managed Identity to authenticate against the resources it interacts with. 
+The Azure Logic App use System Managed Identity to authenticate against most of the resources it interacts with.  
 
-It requires membership to the following roles:  
+All functions require that the Azure Logic App have membership to the roles in the table below, for authentication against the Azure REST API and/or the Azure SQL Database:  
+
 |Scope|Role|
 |---|---|
 |Subscription|Reader|
 |Azure SQL Database|db_datareader <br>db_datawriter <br>db_ddladmin|
 
+The function **laser_aad** authenticates against the Microsoft Graph API via App registration.  
+- Currently the function uses the Client Secret of _AdamActivityLog-AppReg_  
+- The secret has an expiry and will need renewing  
+- The App registration requires the following Microsoft Graph Application API Permissions  
+    - Directory.Read.All
+    - Group.Read.All
+    - GroupMember.Read.All
+    - User.Read.All
