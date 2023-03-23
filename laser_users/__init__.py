@@ -2,7 +2,7 @@ import datetime
 import logging
 
 import azure.functions as func
-from .LASER_aad import updateGroups, updateGroupMembers
+from .LASER_users import updateGroups, updateGroupMembers
 
 def main(mytimer: func.TimerRequest) -> None:
     server = 'lida-dat-cms-test.database.windows.net'
