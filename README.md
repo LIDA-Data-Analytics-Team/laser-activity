@@ -39,11 +39,11 @@ Because costs are mutable until three days after the monthly billing period has 
 - iterates through the last 35 days, pulling data from the Cost Management API one day at a time at subscription scope
 - compares each record with those already present in the database
 	- matches records using [UsageDate], [ResourceGroup], [ResourceId], [Meter], [MeterSubCategory], [MeterCategory], [TagKey], [TagValue] 
-- inserts any not present direct to [dbo].[tblUsageCosts]
+- inserts any not present direct to [dbo].[tblLaserUsageCosts]
 - updates any records already present but with a different [PreTaxCost] 
 	- truncates staging table
 	- inserts to staging table [stg].[UsageCostsUpdate]
-	- updates records in [dbo].[tblUsageCosts] from [stg].[UsageCostsUpdate] on SQL database using primary key [UsageCostsId] of existing record  
+	- updates records in [dbo].[tblLaserUsageCosts] from [stg].[tblLaserUsageCostsUpdate] on SQL database using primary key [UsageCostsId] of existing record  
 
 ### LASER Resources
 
