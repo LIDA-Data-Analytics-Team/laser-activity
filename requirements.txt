@@ -8,6 +8,7 @@ azure-mgmt-costmanagement
 azure-mgmt-resource
 azure-mgmt-monitor
 azure-mgmt-compute
+azure-mgmt-consumption
 azure-core
 msgraph-core
 pyodbc
