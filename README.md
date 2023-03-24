@@ -2,7 +2,14 @@
 
 Azure Function App used to run Python scripts that insert details about LASER usage and costs from Azure APIs into a SQL Database.  
 
-Scheduled to run once every a day, each function executing 10 minutes after the last starting at 0700.
+Scheduled to run once every a day, each function executing 10 minutes after the last starting at 0700, independently and in the following order:
+1. laser_costs 
+2. laser_resources
+3. laser_vm
+4. laser_users
+5. laser_budgets
+
+Each function has a ten minute maximum timeout on the Consumption plan.  
 
 ## What it does
 
@@ -16,7 +23,7 @@ SubscriptionId, SQL Server & Database are all hard coded rather than parameteris
 - [LASER Resources](#laser-resources) : Resource Groups and Resources, along with useful tags for each
 - [LASER VMs](#laser-vms) : VM sizes and Start/Stop event times, along with who initiated them
 - [LASER Users](#laser-users) : Azure AD groups and their memberships
-- LASER Budgets
+- [LASER Budgets](#laser-budgets) : all Budgets present across the subscription
 
 ### LASER Costs
 
@@ -73,7 +80,7 @@ Microsoft only retain activity data in Azure for 90 days:
 ### LASER Users  
 
 Uses Microsoft Graph to get all Azure AD groups that follow the LASER naming convention (and a couple that don't). The group filter is:  
- ```
+```
 startswith(displayName,'VRE-p')  
 or startswith(displayName,'VRE-s')  
 or startswith(displayName,'VRE-u')  
@@ -91,6 +98,13 @@ Both Groups and Group Members result sets are inserted to the SQL Database as a 
 
 Groups inserted to [dbo].[tblLaserAADGroups]
 Group members inserted to [dbo].[tblLaserAADGroupMembers]    
+
+### LASER Budgets
+Gets details of all Budgets present across the subscription, uses [budget_id] as unique identifier to compare against those already present in the database.  
+
+Treated as a Type 2 Slowly Changing Dimension, following the same logic as shown in the [LASER Resources](#laser-resources) diagram, inserting records to [dbo].[tblLaserBudgets].  
+
+Resource Group not available directly, but is present in [BudgetID] as a token/substring. 
 
 ## Permissions
 

@@ -2,7 +2,7 @@
 #import logging
 
 import azure.functions as func
-from datetime import datetime, timedelta
+from datetime import datetime
 from .LASER_costs import get35daysOfCosts
 
 def main(mytimer: func.TimerRequest) -> None:
