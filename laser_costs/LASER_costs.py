@@ -60,18 +60,18 @@ def costs(fromdate, todate):
 def querySql_Costs_SingleDay(single_day, server, database):
     single_day = pd.to_datetime(single_day).strftime("%Y%m%d")
     conn = getSqlConnection(server, database)
-    query = f"select * from dbo.tblUsageCosts where UsageDate = {single_day}"
+    query = f"select * from dbo.tblLaserUsageCosts where UsageDate = {single_day}"
     df = pd.read_sql(query, conn)
     return df
 
 def insertSql_Costs_DataFrame(data_frame, server, database):
     df = data_frame.fillna('Python NaN').replace(['Python NaN'], [None])
-    # Insert new costs from dataframe into table dbo.tblUsageCosts
+    # Insert new costs from dataframe into table dbo.tblLaserUsageCosts
     conn = getSqlConnection(server, database)
     with conn.cursor() as cursor:
         for row in df.itertuples():
             cursor.execute(
-            "insert into [dbo].[tblUsageCosts] ([PreTaxCost],[UsageDate],[ResourceGroup],[ResourceId]"
+            "insert into [dbo].[tblLaserUsageCosts] ([PreTaxCost],[UsageDate],[ResourceGroup],[ResourceId]"
                 + ",[ResourceType],[ServiceName],[ServiceTier],[Meter],[MeterSubCategory],[MeterCategory]"
                 + ",[TagKey],[TagValue],[Currency]) "
                 + "values (?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -96,15 +96,15 @@ def updateSql_Costs_DataFrame(data_frame, server, database):
     conn = getSqlConnection(server, database)
     with conn.cursor() as cursor:
         # Clear out the staging table
-        cursor.execute("truncate table [stg].[tblUsageCostsUpdate]")
+        cursor.execute("truncate table [stg].[tblLaserUsageCostsUpdate]")
         # Insert changing records into staging table
         for row in df.itertuples():
             cursor.execute(
-                "insert into [stg].[tblUsageCostsUpdate] ([UsageCostsId], [PreTaxCost]) values (?,?)"
+                "insert into [stg].[tblLaserUsageCostsUpdate] ([UsageCostsId], [PreTaxCost]) values (?,?)"
                     , int(row.UsageCostsId)
                     , row.PreTaxCost_x)
         # Update costs table
-        cursor.execute("update [dbo].[tblUsageCosts] set [PreTaxCost] = t.[PreTaxCost] from [stg].[tblUsageCostsUpdate] t where [dbo].[tblUsageCosts].[UsageCostsId] = t.[UsageCostsId]")
+        cursor.execute("update [dbo].[tblLaserUsageCosts] set [PreTaxCost] = t.[PreTaxCost] from [stg].[tblLaserUsageCostsUpdate] t where [dbo].[tblLaserUsageCosts].[UsageCostsId] = t.[UsageCostsId]")
         conn.commit()
 
 def daterange(start_date, end_date):
