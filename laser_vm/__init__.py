@@ -4,13 +4,12 @@ import logging
 import azure.functions as func
 from datetime import datetime
 from .LASER_vms import updateVmSizes, getYesterdaysVmActivity
+from ..SQL_stuff import server, database
 
 def main(mytimer: func.TimerRequest) -> None:
     today = datetime.now().strftime('%Y-%m-%d')
-    server = 'lida-dat-cms-test.database.windows.net'
-    database = 'lida_dat_cms_test'
     updateVmSizes(server, database)
-    getYesterdaysVmActivity(today=today, server=server, database=database)
+    getYesterdaysVmActivity(today, server, database)
 
 '''
 def main(mytimer: func.TimerRequest) -> None:

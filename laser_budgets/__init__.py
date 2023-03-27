@@ -3,10 +3,9 @@ import logging
 
 import azure.functions as func
 from .LASER_budgets import updateBudgets
+from ..SQL_stuff import server, database
 
 def main(mytimer: func.TimerRequest) -> None:
-    server = 'lida-dat-cms-test.database.windows.net'
-    database = 'lida_dat_cms_test'
     updateBudgets(server, database)
 
 '''

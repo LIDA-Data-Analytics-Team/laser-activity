@@ -4,12 +4,11 @@
 import azure.functions as func
 from datetime import datetime
 from .LASER_costs import get35daysOfCosts
+from ..SQL_stuff import server, database
 
 def main(mytimer: func.TimerRequest) -> None:
     today = datetime.now().strftime('%Y-%m-%d')
-    server = 'lida-dat-cms-test.database.windows.net'
-    database = 'lida_dat_cms_test'
-    get35daysOfCosts(today=today, server=server, database=database)
+    get35daysOfCosts(today, server, database)
 
 
 '''
