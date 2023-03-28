@@ -1,14 +1,16 @@
-#import datetime
-#import logging
+# import datetime
+# import logging
 
 import azure.functions as func
-from datetime import datetime
-from .LASER_costs import get35daysOfCosts
+from datetime import datetime, timedelta
+from ..LASER_costs import getDateRangeOfCosts
 from ..SQL_stuff import server, database
 
 def main(mytimer: func.TimerRequest) -> None:
-    today = datetime.now().strftime('%Y-%m-%d')
-    get35daysOfCosts(today, server, database)
+    # get costs from 35 days ago to 17 days ago
+    start_date = (datetime.now() - timedelta(35)).strftime('%Y-%m-%d')
+    end_date = (datetime.now() - timedelta(18)).strftime('%Y-%m-%d')
+    getDateRangeOfCosts(start_date, end_date, server, database)
 
 
 '''

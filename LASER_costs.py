@@ -3,7 +3,7 @@ from azure.mgmt.costmanagement import CostManagementClient
 from azure.core.exceptions import HttpResponseError
 import pandas as pd
 from datetime import timedelta
-from ..SQL_stuff import getSqlConnection
+from .SQL_stuff import getSqlConnection
 from time import sleep
 
 credential = ChainedTokenCredential(AzureCliCredential(), DefaultAzureCredential(), ManagedIdentityCredential())
@@ -111,12 +111,13 @@ def daterange(start_date, end_date):
     for n in range(int((end_date - start_date).days)):
         yield start_date + timedelta(n)
 
-def get35daysOfCosts(today, server, database):
+def getDateRangeOfCosts(start_date, end_date, server, database):
     # start getting costs for 35 days ago, as they change during billing period and for 72 hours after
-    start_date = pd.to_datetime(today) - timedelta(35)
-    end_date = pd.to_datetime(today)
+    start_date = pd.to_datetime(start_date)
+    end_date = pd.to_datetime(end_date)
     
     for single_date in daterange(start_date, end_date):
+        print(single_date)
         # Fetch existing records for day in question from SQL Database
         df_e = querySql_Costs_SingleDay(single_date, server, database)
         df_e['TagValue'].fillna("No TagValue", inplace=True)
