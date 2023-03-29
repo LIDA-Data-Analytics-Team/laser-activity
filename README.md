@@ -19,7 +19,7 @@ Each function consists of an \_\__init\_\__ file that kicks off methods containe
 
 SubscriptionId, SQL Server & Database are all hard coded rather than parameterised. This was a design choice made because we'll only be using this to collect activity data from LASER into Prism.  
 
-- [LASER Costs](#laser-costs) : costs accrued by each resource in LASER
+- [LASER Costs](#laser-costs) : costs accrued by each resource in LASER, split across two functions to mitigate risk of timeout
 - [LASER Resources](#laser-resources) : Resource Groups and Resources, along with useful tags for each
 - [LASER VMs](#laser-vms) : VM sizes and Start/Stop event times, along with who initiated them
 - [LASER Users](#laser-users) : Azure AD groups and their memberships
@@ -35,8 +35,11 @@ Important points from the above link:
 
 > During the open month (uninvoiced) period, cost management data should be considered an estimate only. In some cases, charges may be latent in arriving to the system after the usage actually occurred.
 
-Because costs are mutable until three days after the monthly billing period has closed, the function:
+Because costs are mutable until three days after the monthly billing period has closed, the functions:
 - iterates through the last 35 days, pulling data from the Cost Management API one day at a time at subscription scope
+    - Split across two functions to mitigate risk of timeout, given the ten minute limit of Function Apps on a Consumption plan. The first  half of the 35 day period covered by one and the next by the other:  
+        - laser_costs_35to17
+        - laser_costs_18toNow
 - compares each record with those already present in the database
 	- matches records using [UsageDate], [ResourceGroup], [ResourceId], [Meter], [MeterSubCategory], [MeterCategory], [TagKey], [TagValue] 
 - inserts any not present direct to [dbo].[tblLaserUsageCosts]
