@@ -35,7 +35,8 @@ def costs(fromdate, todate):
                                     , {"name": "Meter", "type": "Dimension"}
                                     , {"name": "MeterSubCategory", "type": "Dimension"}
                                     , {"name": "MeterCategory", "type": "Dimension"}
-                                    , {"name": "Budget Code", "type": "TagKey"}],
+                                    , {"name": "Budget Code", "type": "TagKey"}
+                                    , {"name": "budgetcode", "type": "TagKey"}],
                     },
                     "TimePeriod": {"from": fromdate, "to": todate},
                     "timeframe": "Custom",
@@ -50,11 +51,29 @@ def costs(fromdate, todate):
                 continue
         # Break out of the While loop
         break
-    c_df = pd.concat([c_df, pd.DataFrame(resource_cost.rows)], ignore_index=True)
-    if not c_df.empty:
-        c_df.columns = ['PreTaxCost', 'UsageDate','ResourceGroup', 'ResourceId', 'ResourceType'
-                        , 'ServiceName', 'ServiceTier', 'Meter', 'MeterSubCategory', 'MeterCategory'
-                        , 'TagKey', 'TagValue', 'Currency']
+    
+    df_single = pd.DataFrame(resource_cost.rows)
+    # Give columns names
+    if not df_single.empty:
+        df_single.columns = ['PreTaxCost', 'UsageDate','ResourceGroup', 'ResourceId', 'ResourceType', 'ServiceName'
+                             , 'ServiceTier', 'Meter', 'MeterSubCategory', 'MeterCategory', 'TagKey', 'TagValue', 'Currency']
+    # Standardise 'TagKey' values 
+    df_single['TagKey'] = 'budget code'
+    # Isolate records with 'TagKey' that are missing 'TagValue' from those that aren't
+    df_single_noTagValue = df_single.loc[df_single['TagValue'].isnull()].drop_duplicates()
+    df_single_TagValue = df_single.loc[df_single['TagValue'].isnull() == False]
+    # Merge these two DataFrames on everything but TagValue to bring two rows to single row with two columns for 'TagValue'
+    merge_on = ['PreTaxCost', 'UsageDate','ResourceGroup', 'ResourceId', 'ResourceType'
+                , 'ServiceName', 'ServiceTier', 'Meter', 'MeterSubCategory', 'MeterCategory'
+                , 'TagKey', 'Currency']
+    df_merge = df_single_TagValue.merge(df_single_noTagValue, on=merge_on, how='outer')
+    # Create new column with value from one 'TagValue' if missing from first
+    df_merge['TagValue'] = df_merge['TagValue_x'].fillna(df_merge['TagValue_y'])
+    # Drop original _x & _y 'TagValue' columns
+    df_merge = df_merge.drop(columns=['TagValue_x', 'TagValue_y'])
+    
+    c_df = pd.concat([c_df, df_merge], ignore_index=True)
+    
     return c_df
 
 def querySql_Costs_SingleDay(single_day, server, database):
