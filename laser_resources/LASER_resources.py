@@ -21,7 +21,7 @@ def resourceGroups():
             df_rg = pd.DataFrame({})
             for group in list(group_list):
                 if group.tags is not None:
-                    budget_code = group.tags.get('Budget Code', group.tags.get('budgetcode', 'No budget Code'))
+                    budget_code = group.tags.get('Budget Code', group.tags.get('budgetcode', 'No Budget Code'))
                     project_id = group.tags.get('Project ID', group.tags.get('projectid', 'No Project ID'))
                     project_name = group.tags.get('Project Name', group.tags.get('projectname', 'No Project Name'))
                     project_vre = group.tags.get('Project VRE', group.tags.get('projectvre', 'No Project VRE'))
@@ -56,7 +56,7 @@ def resources(rg_list):
                     resource_group, expand = "createdTime,changedTime")
                 for resource in list(resource_list):
                     if resource.tags is not None:
-                        budget_code = resource.tags.get('Budget Code', resource.tags.get('budgetcode', 'No budget Code'))
+                        budget_code = resource.tags.get('Budget Code', resource.tags.get('budgetcode', 'No Budget Code'))
                         project_id = resource.tags.get('Project ID', resource.tags.get('projectid', 'No Project ID'))
                         project_name = resource.tags.get('Project Name', resource.tags.get('projectname', 'No Project Name'))
                         project_vre = resource.tags.get('Project VRE', resource.tags.get('projectvre', 'No Project VRE'))
