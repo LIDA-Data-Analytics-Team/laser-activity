@@ -52,6 +52,13 @@ def costs(fromdate, todate):
         # Break out of the While loop
         break
     
+    #
+    # IT Services are planning changes to how resources are tagged in Azure, to standardise across the estate.
+    # All tags will be lowercase with no spaces. 
+    # There will be a transition period so the following code block is to handle cases where one tag is present but not the other.
+    # Above API call requests values for both tags, which returns one record for each (whether present or not).
+    # This duplication needs consolidating. 
+    #
     df_single = pd.DataFrame(resource_cost.rows)
     # Give columns names
     if not df_single.empty:
