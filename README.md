@@ -119,6 +119,7 @@ All functions require that the Azure Logic App have membership to the roles in t
 |---|---|
 |Subscription|Reader|
 |Azure SQL Database|db_datareader <br>db_datawriter <br>db_ddladmin|
+|Key Vault|Secret Get <br>Secret List|
 
 The function **laser_users** authenticates against the Microsoft Graph API via App registration.  
 - Currently the function uses the Client Secret of _AdamActivityLog-AppReg_  
