@@ -4,6 +4,7 @@
 
 azure-functions
 azure-identity
+azure-keyvault-secrets
 azure-mgmt-costmanagement
 azure-mgmt-resource
 azure-mgmt-monitor

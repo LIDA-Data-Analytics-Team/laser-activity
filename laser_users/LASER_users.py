@@ -1,17 +1,30 @@
-
-# https://learn.microsoft.com/en-us/graph/sdks/sdks-overview
-
-tenantID = 'bdeaeda8-c81d-45ce-863e-5232a535b7cb'
-clientID = 'b4604fff-1214-4351-bc34-c5adcff2e001'
-clientSecret = 'yns8Q~DZgrGfaEqL-qgu9xnnb723x4ziOPS6kcTz'
-
-from azure.identity import ClientSecretCredential
+from azure.identity import AzureCliCredential, ManagedIdentityCredential, DefaultAzureCredential, ChainedTokenCredential, ClientSecretCredential
+from azure.keyvault.secrets import SecretClient
 from msgraph.core import GraphClient
 import pandas as pd 
 from SQL_stuff import getSqlConnection, updateSQL_ValidTo
 
-credential = ClientSecretCredential(tenant_id=tenantID,client_secret=clientSecret,client_id=clientID)
-client = GraphClient(credential=credential)
+
+# https://learn.microsoft.com/en-us/graph/sdks/sdks-overview
+# https://learn.microsoft.com/en-us/azure/key-vault/secrets/quick-create-python?tabs=azure-cli
+
+# Set variables for App Registration and Key vault where the App Registration Secret is stored
+tenantID = 'bdeaeda8-c81d-45ce-863e-5232a535b7cb'
+clientID = 'b4604fff-1214-4351-bc34-c5adcff2e001'
+keyVaultName = "KEY_VAULT_NAME"
+secretName = "SECRET_NAME"
+
+# System Managed Identity used to access Key Vault to retrieve Secret
+keyVault_credential = ChainedTokenCredential(AzureCliCredential(), DefaultAzureCredential(), ManagedIdentityCredential())
+KVUri = f"https://{keyVaultName}.vault.azure.net"
+keyVault_client = SecretClient(vault_url=KVUri, credential=keyVault_credential)
+retrieved_secret = keyVault_client.get_secret(secretName)
+
+# Client Secret retrieved from Key Vault used to authenticate with MS Graph
+# clientSecret = 'yns8Q~DZgrGfaEqL-qgu9xnnb723x4ziOPS6kcTz'
+clientSecret = retrieved_secret.value
+graph_credential = ClientSecretCredential(tenant_id=tenantID,client_secret=clientSecret,client_id=clientID)
+graph_client = GraphClient(credential=graph_credential)
 
 def Groups():
     # https://learn.microsoft.com/en-us/graph/api/group-list?view=graph-rest-1.0&tabs=http
@@ -31,7 +44,7 @@ def Groups():
     df_groups = pd.DataFrame({})
 
     # first run before any nextLink pagination 
-    groups = client.get('/groups',
+    groups = graph_client.get('/groups',
         params={
             '$select': 'id,' 'displayName'
             ,'$filter': groups_filter
@@ -49,7 +62,7 @@ def Groups():
     # subsequent loop of runs while nextLink pagination is active
     # @odata.nextLink contains full URL including select & filter parameters defined in first loop 
     while nextlink is not None:
-        groups = client.get(nextlink)
+        groups = graph_client.get(nextlink)
         groups = groups.json()
         # Get the nextLink property if present
         try:
@@ -72,7 +85,7 @@ def GroupMembers(df_groups):
         
         # First run before any nextLink pagination
         # '/microsoft.graph.user' limits the response to users, nested groups are ignored
-        members = client.get(f"/groups/{id}/members/microsoft.graph.user"
+        members = graph_client.get(f"/groups/{id}/members/microsoft.graph.user"
                             , params={
                                 '$select': 'id, displayName, givenName, surname, mail, userPrincipalName'
                             })
@@ -100,7 +113,7 @@ def GroupMembers(df_groups):
         # subsequent loop of runs while nextLink pagination is active
         # @odata.nextLink contains full URL including select & filter parameters defined in first loop
         while nextlink is not None:
-            members = client.get(nextlink)
+            members = graph_client.get(nextlink)
             members = members.json()
             # Get the nextLink property if present
             try:
