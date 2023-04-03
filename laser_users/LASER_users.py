@@ -8,11 +8,11 @@ from SQL_stuff import getSqlConnection, updateSQL_ValidTo
 # https://learn.microsoft.com/en-us/graph/sdks/sdks-overview
 # https://learn.microsoft.com/en-us/azure/key-vault/secrets/quick-create-python?tabs=azure-cli
 
-# Set variables for App Registration and Key vault where the App Registration Secret is stored
+# Set variables for App Registration ("LASER Dashboard Prod") and Key Vault where the App Registration Secret is stored
 tenantID = 'bdeaeda8-c81d-45ce-863e-5232a535b7cb'
-clientID = 'b4604fff-1214-4351-bc34-c5adcff2e001'
-keyVaultName = "KEY_VAULT_NAME"
-secretName = "SECRET_NAME"
+clientID = '6b8bf186-0012-4d02-9e18-b462bf34a154'
+keyVaultName = "UoL-uks-LRDP-Ops-Prod-kv"
+secretName = "LASERDashboardProd"
 
 # System Managed Identity used to access Key Vault to retrieve Secret
 keyVault_credential = ChainedTokenCredential(AzureCliCredential(), DefaultAzureCredential(), ManagedIdentityCredential())
@@ -21,7 +21,6 @@ keyVault_client = SecretClient(vault_url=KVUri, credential=keyVault_credential)
 retrieved_secret = keyVault_client.get_secret(secretName)
 
 # Client Secret retrieved from Key Vault used to authenticate with MS Graph
-# clientSecret = 'yns8Q~DZgrGfaEqL-qgu9xnnb723x4ziOPS6kcTz'
 clientSecret = retrieved_secret.value
 graph_credential = ClientSecretCredential(tenant_id=tenantID,client_secret=clientSecret,client_id=clientID)
 graph_client = GraphClient(credential=graph_credential)
