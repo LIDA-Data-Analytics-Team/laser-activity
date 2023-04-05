@@ -2,7 +2,7 @@ from azure.identity import AzureCliCredential, ManagedIdentityCredential, Defaul
 from azure.keyvault.secrets import SecretClient
 from msgraph.core import GraphClient
 import pandas as pd 
-from SQL_stuff import getSqlConnection, updateSQL_ValidTo
+from ..SQL_stuff import getSqlConnection, updateSQL_ValidTo
 
 
 # https://learn.microsoft.com/en-us/graph/sdks/sdks-overview
@@ -10,9 +10,9 @@ from SQL_stuff import getSqlConnection, updateSQL_ValidTo
 
 # Set variables for App Registration ("LASER Dashboard Prod") and Key Vault where the App Registration Secret is stored
 tenantID = 'bdeaeda8-c81d-45ce-863e-5232a535b7cb'
-clientID = '6b8bf186-0012-4d02-9e18-b462bf34a154'
-keyVaultName = "UoL-uks-LRDP-Ops-Prod-kv"
-secretName = "LASERDashboardProd"
+clientID = 'b4604fff-1214-4351-bc34-c5adcff2e001'
+keyVaultName = "laseractivity-kv"
+secretName = "LASERDashboard"
 
 # System Managed Identity used to access Key Vault to retrieve Secret
 keyVault_credential = ChainedTokenCredential(AzureCliCredential(), DefaultAzureCredential(), ManagedIdentityCredential())
@@ -246,14 +246,14 @@ def updateGroupMembers(server, database):
                                   | (df_update['user_displayName'] != df_update['UserDisplayName'])
                                   | (df_update['givenName'] != df_update['GivenName'])
                                   | (df_update['surname'] != df_update['Surname'])
-                                  | (df_update['mail'] != df_update['Mail'])
+                                  | (df_update['mail'].fillna('') != df_update['Mail'].fillna(''))
                                   | (df_update['userPrincipalName'] != df_update['UserPrincipalName'])
                                   ]
         if df_update.shape[0] > 0:
             df_update = df_update[['gmid', 'group_id','group_displayName', 'user_id', 'user_displayName'
                                    , 'givenName', 'surname', 'mail', 'userPrincipalName']]
             updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserAADGroupMembers'
-                              , pk='gmid', id_list=df_update['gmid'].to_list())
+                             , pk='gmid', id_list=df_update['gmid'].to_list())
             insertSql_GroupMembers(df_update, server, database)
     print(f"{df_update.shape[0]} AAD Group Members date deleted and updated record inserted")
     
