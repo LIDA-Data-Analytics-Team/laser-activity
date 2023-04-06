@@ -21,6 +21,7 @@ def vmSizes():
                         , 'vm_name': [vm.name]
                         , 'vm_size': [vm.hardware_profile.vm_size]})
         df_vm = pd.concat([df_vm, df], ignore_index=True)
+    df_vm.fillna('')
     return df_vm
 
 def vmActivity(start_date, end_date, df_vm):
@@ -53,6 +54,7 @@ def vmActivity(start_date, end_date, df_vm):
                                 , 'caller': log.caller})
             df = df.loc[df['category'] == 'Administrative']
             df_vm_activity = pd.concat([df_vm_activity, df], ignore_index=True)
+    df_vm_activity.fillna('')
     return df_vm_activity
 
 def querySQL_VmSizes(server, database):
@@ -71,7 +73,8 @@ def querySQL_VmActivity(event_date, server, database):
     return df
 
 def insertSql_VmSizes_DataFrame(data_frame, server, database):
-    df = data_frame.fillna('Python NaN').replace(['Python NaN'], [None])
+    # df = data_frame.fillna('Python NaN').replace(['Python NaN'], [None])
+    df = data_frame
     # Insert new VmSizes from dataframe into table dbo.tblLaserVmSizes
     conn = getSqlConnection(server, database)
     with conn.cursor() as cursor:
@@ -84,7 +87,8 @@ def insertSql_VmSizes_DataFrame(data_frame, server, database):
         conn.commit()
 
 def insertSql_VmActivity_DataFrame(data_frame, server, database):
-    df = data_frame.fillna('Python NaN').replace(['Python NaN'], [None])
+    # df = data_frame.fillna('Python NaN').replace(['Python NaN'], [None])
+    df = data_frame
     # Insert new VmSizes from dataframe into table dbo.tblLaserVmSizes
     conn = getSqlConnection(server, database)
     with conn.cursor() as cursor:
