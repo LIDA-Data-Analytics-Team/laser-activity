@@ -171,9 +171,12 @@ def getYesterdaysVmActivity(today, server, database):
     
     # Check if [EventDataId] already exists in database
     df_e = querySQL_VmActivity(start_date, server, database)
-    df_insert = df_vm_activity.merge(df_e, how='left', left_on='event_data_id', right_on='EventDataId', indicator=True)
-    df_insert = df_insert.loc[df_insert['_merge'] == 'left_only']
+    if df_e.shape[0] > 0 or df_vm_activity.shape[0] > 0:
+        df_insert = df_vm_activity.merge(df_e, how='left', left_on='event_data_id', right_on='EventDataId', indicator=True)
+        df_insert = df_insert.loc[df_insert['_merge'] == 'left_only']
 
-    # write to SQL database
-    insertSql_VmActivity_DataFrame(df_insert, server, database)
-    print(f"{df_insert.shape[0]} VM Activity records created")
+        # write to SQL database
+        insertSql_VmActivity_DataFrame(df_insert, server, database)
+        print(f"{df_insert.shape[0]} VM Activity records created")
+    else:
+        print(f"0 VM Activity records created")
