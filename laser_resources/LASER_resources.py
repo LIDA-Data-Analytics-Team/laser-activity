@@ -4,6 +4,7 @@ from azure.core.exceptions import HttpResponseError
 from ..SQL_stuff import getSqlConnection, updateSQL_ValidTo
 import pandas as pd
 from time import sleep
+import logging 
 
 credential = ChainedTokenCredential(AzureCliCredential(), DefaultAzureCredential(), ManagedIdentityCredential())
 
@@ -151,7 +152,7 @@ def updateResourceGroups(server, database):
     # logically delete in sql
     if df_delete.shape[0] > 0:
         updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserResourceGroups', pk='rgid', id_list=df_delete['rgid'].to_list())
-    print(f"{df_delete.shape[0]} resource groups date deleted")
+    logging.info(f"{df_delete.shape[0]} resource groups date deleted")
     
     # both = present in sql and in azure  
         # no difference = no action 
@@ -171,7 +172,7 @@ def updateResourceGroups(server, database):
                                         }, axis='columns')
             updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserResourceGroups', pk='rgid', id_list=df_update['rgid'].to_list())
             insertSQL_ResourceGroups(df_update, server, database)
-    print(f"{df_update.shape[0]} resource groups date deleted and updated record inserted")
+    logging.info(f"{df_update.shape[0]} resource groups date deleted and updated record inserted")
     
     # right_only = present in azure not in sql = insert new record    
     df_insert = df_all.loc[df_all['_merge'] == 'right_only']
@@ -183,7 +184,7 @@ def updateResourceGroups(server, database):
                                     , 'Project VRE': 'ProjectVRE'
                                     }, axis='columns')
         insertSQL_ResourceGroups(df_insert, server, database)
-    print(f"{df_insert.shape[0]} new resource groups created")
+    logging.info(f"{df_insert.shape[0]} new resource groups created")
 
 def updateResources(server, database):
     # get existing records from sql database to dataframe
@@ -201,7 +202,7 @@ def updateResources(server, database):
     # logically delete in sql
     if df_delete.shape[0] > 0:
         updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserResources', pk='rid', id_list=df_delete['rid'].to_list())
-    print(f"{df_delete.shape[0]} resources date deleted")
+    logging.info(f"{df_delete.shape[0]} resources date deleted")
 
     # both = present in sql and in azure  
         # no difference = no action 
@@ -231,7 +232,7 @@ def updateResources(server, database):
                                         }, axis='columns')
             updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserResources', pk='rid', id_list=df_update['rid'].to_list())
             insertSQL_Resources(df_update, server, database)
-    print(f"{df_update.shape[0]} resources date deleted and updated record inserted")
+    logging.info(f"{df_update.shape[0]} resources date deleted and updated record inserted")
 
     # right_only = present in azure not in sql = insert new record    
     df_insert = df_all.loc[df_all['_merge'] == 'right_only']
@@ -249,7 +250,7 @@ def updateResources(server, database):
                                         , 'CreatedDate_y': 'CreatedDate'
                                         }, axis='columns')
         insertSQL_Resources(df_insert, server, database)
-    print(f"{df_insert.shape[0]} new resources created")
+    logging.info(f"{df_insert.shape[0]} new resources created")
 
 ####################################################################
 ####################################################################

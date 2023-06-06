@@ -4,6 +4,7 @@ from azure.mgmt.compute import ComputeManagementClient
 from ..SQL_stuff import getSqlConnection, updateSQL_ValidTo
 import pandas as pd
 from datetime import timedelta
+import logging
 
 credential = ChainedTokenCredential(AzureCliCredential(), DefaultAzureCredential(), ManagedIdentityCredential())
 
@@ -131,7 +132,7 @@ def updateVmSizes(server, database):
     if df_delete.shape[0] > 0:
         updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserVmSizes'
                           , pk='vmid', id_list=df_delete['vmid'].to_list())
-    print(f"{df_delete.shape[0]} VM Sizes date deleted")
+    logging.info(f"{df_delete.shape[0]} VM Sizes date deleted")
     
     # both = present in sql and in azure  
         # no difference = no action 
@@ -148,7 +149,7 @@ def updateVmSizes(server, database):
             updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserVmSizes'
                               , pk='vmid', id_list=df_update['vmid'].to_list())
             insertSql_VmSizes_DataFrame(df_update, server, database)
-    print(f"{df_update.shape[0]} VM Sizes date deleted and updated record inserted")
+    logging.info(f"{df_update.shape[0]} VM Sizes date deleted and updated record inserted")
     
     # right_only = present in azure not in sql = insert new record    
     df_insert = df_all.loc[df_all['_merge'] == 'right_only']
@@ -158,7 +159,7 @@ def updateVmSizes(server, database):
                                         , 'vm_size': 'VmSize'
                                     }, axis='columns')
         insertSql_VmSizes_DataFrame(df_insert, server, database)
-    print(f"{df_insert.shape[0]} new VM Sizes created")
+    logging.info(f"{df_insert.shape[0]} new VM Sizes created")
 
 def getYesterdaysVmActivity(today, server, database):
     start_date = pd.to_datetime(today) - timedelta(1)
@@ -177,6 +178,6 @@ def getYesterdaysVmActivity(today, server, database):
 
         # write to SQL database
         insertSql_VmActivity_DataFrame(df_insert, server, database)
-        print(f"{df_insert.shape[0]} VM Activity records created")
+        logging.info(f"{df_insert.shape[0]} VM Activity records created")
     else:
-        print(f"0 VM Activity records created")
+        logging.info(f"0 VM Activity records created")

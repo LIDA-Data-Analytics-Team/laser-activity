@@ -2,6 +2,7 @@ from azure.identity import AzureCliCredential, ManagedIdentityCredential, Defaul
 from azure.mgmt.consumption import ConsumptionManagementClient
 import pandas as pd
 from ..SQL_stuff import getSqlConnection, updateSQL_ValidTo
+import logging
 
 credential = ChainedTokenCredential(AzureCliCredential(), DefaultAzureCredential(), ManagedIdentityCredential())
 
@@ -69,7 +70,7 @@ def updateBudgets(server, database):
     if df_delete.shape[0] > 0:
         updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserBudgets'
                           , pk='bid', id_list=df_delete['bid'].to_list())
-    print(f"{df_delete.shape[0]} Budgets date deleted")
+    logging.info(f"{df_delete.shape[0]} Budgets date deleted")
     
     # both = present in sql and in azure  
         # no difference = no action 
@@ -87,11 +88,11 @@ def updateBudgets(server, database):
             updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserBudgets'
                               , pk='bid', id_list=df_update['bid'].to_list())
             insertSql_Budgets(df_update, server, database)
-    print(f"{df_update.shape[0]} Budgets date deleted and updated record inserted")
+    logging.info(f"{df_update.shape[0]} Budgets date deleted and updated record inserted")
     
     # right_only = present in azure not in sql = insert new record    
     df_insert = df_all.loc[df_all['_merge'] == 'right_only']
     if df_insert.shape[0] > 0:
         df_insert = df_insert[['budget_id', 'budget_name', 'time_grain', 'start_date', 'end_date', 'amount']]
         insertSql_Budgets(df_insert, server, database)
-    print(f"{df_insert.shape[0]} new Budgets created")
+    logging.info(f"{df_insert.shape[0]} new Budgets created")

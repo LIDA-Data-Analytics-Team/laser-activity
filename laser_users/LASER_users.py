@@ -3,7 +3,7 @@ from azure.keyvault.secrets import SecretClient
 from msgraph.core import GraphClient
 import pandas as pd 
 from ..SQL_stuff import getSqlConnection, updateSQL_ValidTo
-
+import logging
 
 # https://learn.microsoft.com/en-us/graph/sdks/sdks-overview
 # https://learn.microsoft.com/en-us/azure/key-vault/secrets/quick-create-python?tabs=azure-cli
@@ -196,7 +196,7 @@ def updateGroups(server, database):
     if df_delete.shape[0] > 0:
         updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserAADGroups'
                           , pk='gid', id_list=df_delete['gid'].to_list())
-    print(f"{df_delete.shape[0]} AAD Groups date deleted")
+    logging.info(f"{df_delete.shape[0]} AAD Groups date deleted")
     
     # both = present in sql and in azure  
         # no difference = no action 
@@ -209,14 +209,14 @@ def updateGroups(server, database):
             updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserAADGroups'
                               , pk='gid', id_list=df_update['gid'].to_list())
             insertSql_Groups(df_update, server, database)
-    print(f"{df_update.shape[0]} AAD Groups date deleted and updated record inserted")
+    logging.info(f"{df_update.shape[0]} AAD Groups date deleted and updated record inserted")
     
     # right_only = present in azure not in sql = insert new record    
     df_insert = df_all.loc[df_all['_merge'] == 'right_only']
     if df_insert.shape[0] > 0:
         df_insert = df_insert[['id','displayName']]
         insertSql_Groups(df_insert, server, database)
-    print(f"{df_insert.shape[0]} new AAD Groups created")
+    logging.info(f"{df_insert.shape[0]} new AAD Groups created")
 
 def updateGroupMembers(server, database):
     # get existing records from sql database to dataframe
@@ -235,7 +235,7 @@ def updateGroupMembers(server, database):
     if df_delete.shape[0] > 0:
         updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserAADGroupMembers'
                           , pk='gmid', id_list=df_delete['gmid'].to_list())
-    print(f"{df_delete.shape[0]} AAD Group Members date deleted")
+    logging.info(f"{df_delete.shape[0]} AAD Group Members date deleted")
     
     # both = present in sql and in azure  
         # no difference = no action 
@@ -255,7 +255,7 @@ def updateGroupMembers(server, database):
             updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserAADGroupMembers'
                              , pk='gmid', id_list=df_update['gmid'].to_list())
             insertSql_GroupMembers(df_update, server, database)
-    print(f"{df_update.shape[0]} AAD Group Members date deleted and updated record inserted")
+    logging.info(f"{df_update.shape[0]} AAD Group Members date deleted and updated record inserted")
     
     # right_only = present in azure not in sql = insert new record    
     df_insert = df_all.loc[df_all['_merge'] == 'right_only']
@@ -263,4 +263,4 @@ def updateGroupMembers(server, database):
         df_insert = df_insert[['group_id','group_displayName', 'user_id', 'user_displayName'
                                 , 'givenName', 'surname', 'mail', 'userPrincipalName']]
         insertSql_GroupMembers(df_insert, server, database)
-    print(f"{df_insert.shape[0]} new AAD Group Members created")
+    logging.info(f"{df_insert.shape[0]} new AAD Group Members created")

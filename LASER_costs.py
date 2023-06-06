@@ -5,6 +5,7 @@ import pandas as pd
 from datetime import timedelta
 from .SQL_stuff import getSqlConnection
 from time import sleep
+import logging
 
 credential = ChainedTokenCredential(AzureCliCredential(), DefaultAzureCredential(), ManagedIdentityCredential())
 
@@ -143,7 +144,7 @@ def getDateRangeOfCosts(start_date, end_date, server, database):
     end_date = pd.to_datetime(end_date)
     
     for single_date in daterange(start_date, end_date):
-        print(single_date)
+        logging.info(f"Retrieving costs for {single_date}")
         # Fetch existing records for day in question from SQL Database
         df_e = querySql_Costs_SingleDay(single_date, server, database)
         df_e['TagValue'].fillna("No TagValue", inplace=True)
