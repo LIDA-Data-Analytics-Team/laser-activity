@@ -111,7 +111,7 @@ Resource Group not available directly, but is present in [BudgetID] as a token/s
 
 ## Permissions
 
-The Azure Logic App use System Managed Identity to authenticate against most of the resources it interacts with.  
+The Azure Function App use System Managed Identity to authenticate against most of the resources it interacts with.  
 
 All functions require that the Azure Function App have membership to the roles in the table below, for authentication against the Azure REST API and/or the Azure SQL Database:  
 
