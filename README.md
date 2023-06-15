@@ -132,7 +132,8 @@ The function **laser_users** authenticates against the Microsoft Graph API via A
 
 ## Azure REST API URLs 
 
-The Azure REST APIs in use use the follwing URLs:
+These functions use _Azure SDK for Python_ to access the Azure REST APIs. While the actual URLs are 'hidden' behind the SDK the documentation suggests the following URLs are in use:
+
 |Function|API used|URL|
 |---|---|---|
 |laser_budgets|[Budgets - Get](https://learn.microsoft.com/en-us/rest/api/consumption/budgets/get?tabs=HTTP)|https://management.azure.com/{scope}/providers/Microsoft.Consumption/budgets/{budgetName}?api-version=2023-03-01|
