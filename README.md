@@ -135,7 +135,7 @@ The function **laser_users** authenticates against the Microsoft Graph API via A
 The Azure REST APIs in use use the follwing URLs:
 |Function|API used|URL|
 |---|---|---|
-|laser_budgets|[Budgets - Get](https://management.azure.com/{scope}/providers/Microsoft.Consumption/budgets/{budgetName}?api-version=2023-03-01)|https://learn.microsoft.com/en-us/rest/api/consumption/budgets/get?tabs=HTTP|
+|laser_budgets|[Budgets - Get](https://learn.microsoft.com/en-us/rest/api/consumption/budgets/get?tabs=HTTP)|https://management.azure.com/{scope}/providers/Microsoft.Consumption/budgets/{budgetName}?api-version=2023-03-01|
 |laser_costs_...|[Query - Usage](https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?tabs=HTTP)|https://management.azure.com/{scope}/providers/Microsoft.CostManagement/query?api-version=2023-03-01|
 |laser_resources|[Resource Groups - List](https://learn.microsoft.com/en-us/rest/api/resources/resource-groups/list)|https://management.azure.com/subscriptions/{subscriptionId}/resourcegroups?api-version=2021-04-01|
 |laser_resources|[Resources - List By Resource Group](https://learn.microsoft.com/en-us/rest/api/resources/resources/list-by-resource-group)|https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/resources?api-version=2021-04-01|
