@@ -18,6 +18,7 @@ def resourceGroups():
     # Potential for infinite loop mitigated by 10 minute max timeout of Consumption Function App
     while True:
         try:
+            #https://learn.microsoft.com/en-us/rest/api/resources/resource-groups/list
             group_list = resource_client.resource_groups.list()
             df_rg = pd.DataFrame({})
             for group in list(group_list):

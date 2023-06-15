@@ -129,3 +129,17 @@ The function **laser_users** authenticates against the Microsoft Graph API via A
     - GroupMember.Read.All
     - User.Read.All
 - The secret is stored in a key vault, for which the Function App System Managed Identity requires access as above.  
+
+## Azure REST API URLs 
+
+The Azure REST APIs in use use the follwing URLs:
+|Function|API used|URL|
+|---|---|---|
+|laser_budgets|[Budgets - Get](https://management.azure.com/{scope}/providers/Microsoft.Consumption/budgets/{budgetName}?api-version=2023-03-01)|https://learn.microsoft.com/en-us/rest/api/consumption/budgets/get?tabs=HTTP|
+|laser_costs_...|[Query - Usage](https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?tabs=HTTP)|https://management.azure.com/{scope}/providers/Microsoft.CostManagement/query?api-version=2023-03-01|
+|laser_resources|[Resource Groups - List](https://learn.microsoft.com/en-us/rest/api/resources/resource-groups/list)|https://management.azure.com/subscriptions/{subscriptionId}/resourcegroups?api-version=2021-04-01|
+|laser_resources|[Resources - List By Resource Group](https://learn.microsoft.com/en-us/rest/api/resources/resources/list-by-resource-group)|https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/resources?api-version=2021-04-01|
+|laser_users|[List groups](https://learn.microsoft.com/en-us/graph/api/group-list?view=graph-rest-1.0&tabs=http)|https://graph.microsoft.com/v1.0/groups|
+|laser_users|[List group members](https://learn.microsoft.com/en-us/graph/api/group-list-members?view=graph-rest-1.0&tabs=http)|https://graph.microsoft.com/v1.0/groups/02bd9fd6-8f93-4758-87c3-1fb73740a315/members|
+|laser_vm|[Virtual Machines - List All](https://learn.microsoft.com/en-us/rest/api/compute/virtual-machines/list-all?tabs=HTTP)|https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Compute/virtualMachines?api-version=2023-03-01|
+|laser_vm|[Activity Logs - List](https://learn.microsoft.com/en-us/rest/api/monitor/activity-logs/list?tabs=HTTP)|https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Insights/eventtypes/management/values?api-version=2015-04-01&$filter={$filter}|
