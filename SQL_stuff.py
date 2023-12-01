@@ -7,8 +7,8 @@ from azure.identity import AzureCliCredential, ManagedIdentityCredential, Defaul
 import struct
 import pyodbc 
 
-server = 'lida-dat-cms-test.database.windows.net'
-database = 'lida_dat_cms_test'
+server = 'lida-dat-cms.database.windows.net'
+database = 'lida_dat_cms'
 
 def getSqlConnection(server, database):
     # Use the cli credential to get a token after the user has signed in via the Azure CLI 'az login' command.

@@ -50,6 +50,8 @@ def costs(fromdate, todate):
             if e.status_code == 429:
                 sleep(15)
                 continue
+            else:
+                logging.error(e.message)
         # Break out of the While loop
         break
     

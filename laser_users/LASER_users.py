@@ -10,9 +10,9 @@ import logging
 
 # Set variables for App Registration ("LASER Dashboard Prod") and Key Vault where the App Registration Secret is stored
 tenantID = 'bdeaeda8-c81d-45ce-863e-5232a535b7cb'
-clientID = 'b4604fff-1214-4351-bc34-c5adcff2e001'
-keyVaultName = "laseractivity-kv"
-secretName = "LASERDashboard"
+clientID = '6b8bf186-0012-4d02-9e18-b462bf34a154'
+keyVaultName = "UoL-uks-LRDP-Ops-Prod-kv"
+secretName = "LASERDashboardProd"
 
 # System Managed Identity used to access Key Vault to retrieve Secret
 keyVault_credential = ChainedTokenCredential(AzureCliCredential(), DefaultAzureCredential(), ManagedIdentityCredential())
