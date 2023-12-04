@@ -48,6 +48,7 @@ def costs(fromdate, todate):
         # If received then wait 15 seconds and try again (within the While loop)
         except HttpResponseError as e:
             if e.status_code == 429:
+                logging.warning(e.message)
                 sleep(15)
                 continue
             else:
@@ -90,6 +91,14 @@ def querySql_Costs_SingleDay(single_day, server, database):
     single_day = pd.to_datetime(single_day).strftime("%Y%m%d")
     conn = getSqlConnection(server, database)
     query = f"select * from dbo.tblLaserUsageCosts where UsageDate = {single_day}"
+    df = pd.read_sql(query, conn)
+    return df
+
+def querySql_Costs_DateRange(fromdate, todate, server, database):
+    fromdate = pd.to_datetime(fromdate).strftime("%Y%m%d")
+    todate = pd.to_datetime(todate).strftime("%Y%m%d")
+    conn = getSqlConnection(server, database)
+    query = f"select * from dbo.tblLaserUsageCosts where UsageDate between {fromdate} and {todate}"
     df = pd.read_sql(query, conn)
     return df
 
@@ -177,3 +186,40 @@ def getDateRangeOfCosts(start_date, end_date, server, database):
         # If more than none update PreTaxCost of each record
         if df_update.shape[0] > 0:
             updateSql_Costs_DataFrame(df_update[['UsageCostsId', 'PreTaxCost_x']], server, database)
+
+def getCosts(start_date, end_date, server, database):
+    # start getting costs for 35 days ago, as they change during billing period and for 72 hours after
+    start_date = pd.to_datetime(start_date)
+    end_date = pd.to_datetime(end_date)
+    
+    print(f"Retrieving costs for {start_date} to {end_date}")
+    # Fetch existing records for day in question from SQL Database
+    df_e = querySql_Costs_DateRange(start_date, end_date, server, database)
+    df_e['TagValue'].fillna("No TagValue", inplace=True)
+    df_e = df_e.convert_dtypes()
+    # Fetch records from Cost Management API for day in question
+    df_n = costs(start_date, end_date)
+    df_n['TagValue'].fillna("No TagValue", inplace=True)
+    df_n = df_n.convert_dtypes()
+    
+    # Fields used to identify unique records and join DataFrames
+    merge_list = ['UsageDate','ResourceGroup','ResourceId', 'Meter', 'MeterSubCategory', 'MeterCategory', 'TagKey', 'TagValue']
+
+    # Suffix '_x' is left, '_y' is right
+
+    # Determine records fetched from API that are not already present in database
+    df_insert = df_n.merge(df_e, how='left', on=merge_list, indicator=True)
+    df_insert = df_insert.loc[df_insert['_merge'] == 'left_only']
+    # If more than none insert them to database
+    if df_insert.shape[0] > 0:
+        df_insert = df_insert[['PreTaxCost_x', 'UsageDate', 'ResourceGroup', 'ResourceId' 
+            , 'ResourceType_x', 'ServiceName_x', 'ServiceTier_x', 'Meter', 'MeterSubCategory', 'MeterCategory' 
+            , 'TagKey', 'TagValue', 'Currency_x']]
+        insertSql_Costs_DataFrame(df_insert, server, database)
+    
+    # Determine records fetched from API that are already present in database
+    df_update = df_n.merge(df_e, how='inner', on=merge_list)
+    df_update = df_update.loc[df_update['PreTaxCost_y'] != df_update['PreTaxCost_x']]
+    # If more than none update PreTaxCost of each record
+    if df_update.shape[0] > 0:
+        updateSql_Costs_DataFrame(df_update[['UsageCostsId', 'PreTaxCost_x']], server, database)
