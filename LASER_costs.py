@@ -56,7 +56,7 @@ def costs(fromdate, todate):
                 sleep_for = resource_cost.headers['x-ms-ratelimit-microsoft.costmanagement-tenant-retry-after']
             elif "x-ms-ratelimit-microsoft.costmanagement-clienttype-retry-after" in resource_cost.headers:
                 sleep_for = resource_cost.headers['x-ms-ratelimit-microsoft.costmanagement-clienttype-retry-after']
-            logging.info(f"Sleeping for {sleep_for} seconds")
+            logging.info(f"{resource_cost.status_code} - {resource_cost.reason}. Sleeping for {sleep_for} seconds")
             sleep(int(sleep_for))
             continue
         resource_cost_data = resource_cost.json()
@@ -234,32 +234,39 @@ def getCosts(start_date, end_date, server, database):
     df_e = querySql_Costs_DateRange(start_date, end_date, server, database)
     df_e['TagValue'].fillna("No TagValue", inplace=True)
     df_e = df_e.convert_dtypes()
+    logging.info(f"Retrieved {df_e.shape[0]} existing records from SQL Database")
+
     # Fetch records from Cost Management API for day in question
     df_n = costs(start_date, end_date)
     df_n['TagValue'].fillna("No TagValue", inplace=True)
     df_n = df_n.convert_dtypes()
+    logging.info(f"Retrieved {df_n.shape[0]} existing records from Cost Management API")
     
     # Fields used to identify unique records and join DataFrames
     merge_list = ['UsageDate','ResourceGroup','ResourceId', 'Meter', 'MeterSubCategory', 'MeterCategory', 'TagKey', 'TagValue']
-
+    logging.info("Merged records")
     # Suffix '_x' is left, '_y' is right
 
     # Determine records fetched from API that are not already present in database
     df_insert = df_n.merge(df_e, how='left', on=merge_list, indicator=True)
     df_insert = df_insert.loc[df_insert['_merge'] == 'left_only']
+    logging.info(f"{df_insert.shape[0]} inserts identified")
     # If more than none insert them to database
     if df_insert.shape[0] > 0:
         df_insert = df_insert[['PreTaxCost_x', 'UsageDate', 'ResourceGroup', 'ResourceId' 
             , 'ResourceType_x', 'ServiceName_x', 'ServiceTier_x', 'Meter', 'MeterSubCategory', 'MeterCategory' 
             , 'TagKey', 'TagValue', 'Currency_x']]
         insertSql_Costs_DataFrame(df_insert, server, database) 
+    logging.info("Records inserted to DB")
     
     # Determine records fetched from API that are already present in database
     df_update = df_n.merge(df_e, how='inner', on=merge_list)
     df_update = df_update.loc[df_update['PreTaxCost_y'] != df_update['PreTaxCost_x']]
+    logging.info(f"{df_update.shape[0]} updates identified")
     # If more than none update PreTaxCost of each record
     if df_update.shape[0] > 0:
         updateSql_Costs_DataFrame(df_update[['UsageCostsId', 'PreTaxCost_x']], server, database)
+    logging.info("Records updated on DB")
 
 def getDateRangeOfCosts(start_date, end_date, server, database):
     # start getting costs for 35 days ago, as they change during billing period and for 72 hours after
