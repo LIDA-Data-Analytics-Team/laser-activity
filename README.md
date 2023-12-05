@@ -36,8 +36,8 @@ Important points from the above link:
 > During the open month (uninvoiced) period, cost management data should be considered an estimate only. In some cases, charges may be latent in arriving to the system after the usage actually occurred.
 
 Because costs are mutable until three days after the monthly billing period has closed, the functions:
-- iterates through the last 35 days, pulling data from the Cost Management API one day at a time at subscription scope
-    - Split across two functions to mitigate risk of timeout, given the ten minute limit of Function Apps on a Consumption plan. The first  half of the 35 day period covered by one and the next by the other:  
+- pull paginated data from the last 35 days via the Cost Management API at subscription scope
+    - Split across two functions to mitigate risk of timeout, given the ten minute limit of Function Apps on a Consumption plan. The first half of the 35 day period covered by one and the next by the other:  
         - laser_costs_35to17
         - laser_costs_18toNow
 - compares each record with those already present in the database
