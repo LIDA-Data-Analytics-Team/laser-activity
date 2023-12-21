@@ -11,7 +11,7 @@ import logging
 # Set variables for App Registration ("LASER Dashboard Prod") and Key Vault where the App Registration Secret is stored
 tenantID = 'bdeaeda8-c81d-45ce-863e-5232a535b7cb'
 clientID = '6b8bf186-0012-4d02-9e18-b462bf34a154'
-keyVaultName = "UoL-uks-LRDP-Ops-Prod-kv"
+keyVaultName = "UoL-uks-LRDP-dashboard" 
 secretName = "LASERDashboardProd"
 
 # System Managed Identity used to access Key Vault to retrieve Secret
