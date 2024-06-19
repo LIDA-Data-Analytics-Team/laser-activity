@@ -94,95 +94,11 @@ def costs(fromdate, todate):
     
     return c_df
 
-def costs_SDK(fromdate, todate):
-    fromdate = pd.to_datetime(fromdate)
-    todate = pd.to_datetime(todate)
-    costmanagement_client = CostManagementClient(credential)
-    resource_cost = None
-    c_df = pd.DataFrame({})
-    # Potential for infinite loop mitigated by 10 minute max timeout of Consumption Function App
-    while True:
-        try:
-            resource_cost = costmanagement_client.query.usage(
-                # uri parameter (https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?tabs=HTTP#uri-parameters)
-                scope = f"subscriptions/{subscription_id}", #/resourceGroups/{resource_group}",
-                # request body (https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?tabs=HTTP#request-body)
-                parameters={
-                    "dataset": {
-                        "aggregation": {"totalCost": {"function": "Sum", "name": "PreTaxCost"}},
-                        "granularity": "Daily",
-                        "grouping": [{"name": "ResourceGroupName", "type": "Dimension"}
-                                    , {"name": "ResourceId", "type": "Dimension"}
-                                    , {"name": "ResourceType", "type": "Dimension"}
-                                    , {"name": "ServiceName", "type": "Dimension"}
-                                    , {"name": "ServiceTier", "type": "Dimension"}
-                                    , {"name": "Meter", "type": "Dimension"}
-                                    , {"name": "MeterSubCategory", "type": "Dimension"}
-                                    , {"name": "MeterCategory", "type": "Dimension"}
-                                    , {"name": "Budget Code", "type": "TagKey"}
-                                    , {"name": "budgetcode", "type": "TagKey"}],
-                    },
-                    "TimePeriod": {"from": fromdate, "to": todate},
-                    "timeframe": "Custom",
-                    "type": "ActualCost",
-                },
-            )
-        # HttpResponseError Code: 429, Message: Too many requests. Please retry. 
-        # If received then wait 15 seconds and try again (within the While loop)
-        except HttpResponseError as e:
-            if e.status_code == 429:
-                logging.warning(e.message)
-                sleep(15)
-                continue
-            else:
-                logging.error(e.message)
-        # Break out of the While loop
-        break
-    
-    #
-    # IT Services are planning changes to how resources are tagged in Azure, to standardise across the estate.
-    # All tags will be lowercase with no spaces. 
-    # There will be a transition period so the following code block is to handle cases where one tag is present but not the other.
-    # Above API call requests values for both tags, which returns one record for each (whether present or not).
-    # This duplication needs consolidating. 
-    #
-    if resource_cost is not None:
-        df_single = pd.DataFrame(resource_cost.rows)
-        # Give columns names
-        if not df_single.empty:
-            df_single.columns = ['PreTaxCost', 'UsageDate','ResourceGroup', 'ResourceId', 'ResourceType', 'ServiceName'
-                                , 'ServiceTier', 'Meter', 'MeterSubCategory', 'MeterCategory', 'TagKey', 'TagValue', 'Currency']
-        # Standardise 'TagKey' values 
-        df_single['TagKey'] = 'budget code'
-        # Isolate records with 'TagKey' that are missing 'TagValue' from those that aren't
-        df_single_noTagValue = df_single.loc[df_single['TagValue'].isnull()].drop_duplicates()
-        df_single_TagValue = df_single.loc[df_single['TagValue'].isnull() == False]
-        # Merge these two DataFrames on everything but TagValue to bring two rows to single row with two columns for 'TagValue'
-        merge_on = ['PreTaxCost', 'UsageDate','ResourceGroup', 'ResourceId', 'ResourceType'
-                    , 'ServiceName', 'ServiceTier', 'Meter', 'MeterSubCategory', 'MeterCategory'
-                    , 'TagKey', 'Currency']
-        df_merge = df_single_TagValue.merge(df_single_noTagValue, on=merge_on, how='outer')
-        # Create new column with value from one 'TagValue' if missing from first
-        df_merge['TagValue'] = df_merge['TagValue_x'].fillna(df_merge['TagValue_y'])
-        # Drop original _x & _y 'TagValue' columns
-        df_merge = df_merge.drop(columns=['TagValue_x', 'TagValue_y'])
-        
-        c_df = pd.concat([c_df, df_merge], ignore_index=True)
-    
-    return c_df
-
 def querySql_Costs_DateRange(fromdate, todate, server, database):
     fromdate = pd.to_datetime(fromdate).strftime("%Y%m%d")
     todate = pd.to_datetime(todate).strftime("%Y%m%d")
     conn = getSqlConnection(server, database)
     query = f"select [UsageCostsId],[PreTaxCost],[UsageDate],[ResourceGroup],[ResourceId],[ResourceType],[Meter],[MeterSubCategory],[MeterCategory],[TagKey],[TagValue] from dbo.tblLaserUsageCosts where UsageDate between {fromdate} and {todate}"
-    df = pd.read_sql(query, conn)
-    return df
-
-def querySql_Costs_SingleDay(single_day, server, database):
-    single_day = pd.to_datetime(single_day).strftime("%Y%m%d")
-    conn = getSqlConnection(server, database)
-    query = f"select * from dbo.tblLaserUsageCosts where UsageDate = {single_day}"
     df = pd.read_sql(query, conn)
     return df
 
@@ -273,42 +189,3 @@ def getCosts(start_date, end_date, server, database):
     if df_update.shape[0] > 0:
         updateSql_Costs_DataFrame(df_update[['UsageCostsId', 'PreTaxCost_x']], server, database)
     logging.info("Records updated on DB")
-
-def getDateRangeOfCosts(start_date, end_date, server, database):
-    # start getting costs for 35 days ago, as they change during billing period and for 72 hours after
-    start_date = pd.to_datetime(start_date)
-    end_date = pd.to_datetime(end_date)
-    
-    for single_date in daterange(start_date, end_date):
-        logging.info(f"Retrieving costs for {single_date}")
-        # Fetch existing records for day in question from SQL Database
-        df_e = querySql_Costs_SingleDay(single_date, server, database)
-        df_e['TagValue'].fillna("No TagValue", inplace=True)
-        df_e = df_e.convert_dtypes()
-        # Fetch records from Cost Management API for day in question
-        df_n = costs(single_date, single_date)
-        df_n['TagValue'].fillna("No TagValue", inplace=True)
-        df_n = df_n.convert_dtypes()
-        
-        # Fields used to identify unique records and join DataFrames
-        merge_list = ['UsageDate','ResourceGroup','ResourceId', 'Meter', 'MeterSubCategory', 'MeterCategory', 'TagKey', 'TagValue']
-
-        # Suffix '_x' is left, '_y' is right
-
-        # Determine records fetched from API that are not already present in database
-        df_insert = df_n.merge(df_e, how='left', on=merge_list, indicator=True)
-        df_insert = df_insert.loc[df_insert['_merge'] == 'left_only']
-        # If more than none insert them to database
-        if df_insert.shape[0] > 0:
-            df_insert = df_insert[['PreTaxCost_x', 'UsageDate', 'ResourceGroup', 'ResourceId' 
-                , 'ResourceType_x', 'ServiceName_x', 'ServiceTier_x', 'Meter', 'MeterSubCategory', 'MeterCategory' 
-                , 'TagKey', 'TagValue', 'Currency_x']]
-            insertSql_Costs_DataFrame(df_insert, server, database)
-        
-        # Determine records fetched from API that are already present in database
-        df_update = df_n.merge(df_e, how='inner', on=merge_list)
-        df_update = df_update.loc[df_update['PreTaxCost_y'] != df_update['PreTaxCost_x']]
-        # If more than none update PreTaxCost of each record
-        if df_update.shape[0] > 0:
-            updateSql_Costs_DataFrame(df_update[['UsageCostsId', 'PreTaxCost_x']], server, database)
-
