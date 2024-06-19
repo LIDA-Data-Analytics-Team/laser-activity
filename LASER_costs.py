@@ -175,7 +175,7 @@ def querySql_Costs_DateRange(fromdate, todate, server, database):
     fromdate = pd.to_datetime(fromdate).strftime("%Y%m%d")
     todate = pd.to_datetime(todate).strftime("%Y%m%d")
     conn = getSqlConnection(server, database)
-    query = f"select * from dbo.tblLaserUsageCosts where UsageDate between {fromdate} and {todate}"
+    query = f"select [UsageCostsId],[PreTaxCost],[UsageDate],[ResourceGroup],[ResourceId],[ResourceType],[Meter],[MeterSubCategory],[MeterCategory],[TagKey],[TagValue] from dbo.tblLaserUsageCosts where UsageDate between {fromdate} and {todate}"
     df = pd.read_sql(query, conn)
     return df
 
@@ -202,14 +202,14 @@ def insertSql_Costs_DataFrame(data_frame, server, database):
                 ,row.ResourceGroup
                 ,row.ResourceId
                 ,row.ResourceType_x
-                ,row.ServiceName_x
-                ,row.ServiceTier_x
+                ,row.ServiceName
+                ,row.ServiceTier
                 ,row.Meter
                 ,row.MeterSubCategory
                 ,row.MeterCategory
                 ,row.TagKey
                 ,row.TagValue
-                ,row.Currency_x
+                ,row.Currency
                 )
         conn.commit()
 
@@ -249,18 +249,19 @@ def getCosts(start_date, end_date, server, database):
     
     # Fields used to identify unique records and join DataFrames
     merge_list = ['UsageDate','ResourceGroup','ResourceId', 'Meter', 'MeterSubCategory', 'MeterCategory', 'TagKey', 'TagValue']
-    logging.info("Merged records")
-    # Suffix '_x' is left, '_y' is right
 
-    # Determine records fetched from API that are not already present in database
     df_insert = df_n.merge(df_e, how='left', on=merge_list, indicator=True)
+    # Suffix '_x' is left, '_y' is right
+    logging.info("Merged records")
+    
+    # Determine records fetched from API that are not already present in database
     df_insert = df_insert.loc[df_insert['_merge'] == 'left_only']
     logging.info(f"{df_insert.shape[0]} inserts identified")
     # If more than none insert them to database
     if df_insert.shape[0] > 0:
         df_insert = df_insert[['PreTaxCost_x', 'UsageDate', 'ResourceGroup', 'ResourceId' 
-            , 'ResourceType_x', 'ServiceName_x', 'ServiceTier_x', 'Meter', 'MeterSubCategory', 'MeterCategory' 
-            , 'TagKey', 'TagValue', 'Currency_x']]
+            , 'ResourceType_x', 'ServiceName', 'ServiceTier', 'Meter', 'MeterSubCategory', 'MeterCategory' 
+            , 'TagKey', 'TagValue', 'Currency']]
         insertSql_Costs_DataFrame(df_insert, server, database) 
     logging.info("Records inserted to DB")
     
