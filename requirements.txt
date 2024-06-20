@@ -11,6 +11,6 @@ azure-mgmt-monitor
 azure-mgmt-compute
 azure-mgmt-consumption
 azure-core
-msgraph-core
+msgraph-core==0.2.2
 pyodbc
 pandas
