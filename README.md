@@ -128,7 +128,8 @@ The function **laser_users** authenticates against the Microsoft Graph API via A
     - Group.Read.All
     - GroupMember.Read.All
     - User.Read.All
-- The secret is stored in a key vault, for which the Function App System Managed Identity requires access as above.  
+- The secret is stored in a key vault, for which the Function App System Managed Identity requires access as above.
+- The App Registration is called `LASER Dashboard Prod`.  
 
 ## Azure REST API URLs 
 
