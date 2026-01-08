@@ -205,9 +205,9 @@ def updateGroups(server, database):
     if df_update.shape[0] > 0:
         df_update = df_update.loc[ (df_update['displayName'] != df_update['GroupDisplayName']) ]
         if df_update.shape[0] > 0:
-            df_update = df_update[['id','displayName']]
             updateSQL_ValidTo(server=server, database=database, table='dbo.tblLaserAADGroups'
                               , pk='gid', id_list=df_update['gid'].to_list())
+            df_update = df_update[['id','displayName']]
             insertSql_Groups(df_update, server, database)
     logging.info(f"{df_update.shape[0]} AAD Groups date deleted and updated record inserted")
     
